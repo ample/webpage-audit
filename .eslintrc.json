@@ -1,0 +1,9 @@
+{
+  "extends": "next/core-web-vitals",
+  "overrides": [
+    {
+      "files": ["next.config.js"],
+      "rules": { "@typescript-eslint/no-require-imports": "off" }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+[build]
+  command = "pnpm run build"
+  publish = ".next"
+
+# Ensures Next.js pages/API routes map to Netlify Functions
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
