@@ -9,8 +9,8 @@ module.exports = {
     config.resolve ??= {};
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
-      '@components': path.join(__dirname, 'components'),
-      '@lib': path.join(__dirname, 'lib'),
+      '@components': path.join(__dirname, 'src/components'),
+      '@lib': path.join(__dirname, 'src/lib'),
     };
     return config;
   },
