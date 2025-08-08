@@ -64,12 +64,26 @@ export default function useAudit(testId: string | null) {
   function startStepRotation(forPhase: Phase) {
     if (stepTimer.current) clearTimeout(stepTimer.current);
     const steps = forPhase === 'queued' ? QUEUED_STEPS : RUNNING_STEPS;
+
     stepIdx.current = 0;
     setMessage(steps[0] || '');
 
     const tick = () => {
       if (phaseRef.current !== forPhase) return;
-      stepIdx.current = Math.min(stepIdx.current + 1, steps.length - 1);
+
+      if (stepIdx.current >= steps.length - 1) {
+        // For queued: if we hit the end of queued steps and are still visually queued,
+        // move to running messages to avoid looking stuck. (Server truth still controls completion.)
+        if (forPhase === 'queued') {
+          setMonotonicPhase('running');
+          return;
+        }
+        // For running: hold the last message with a gentle heartbeat.
+        stepTimer.current = setTimeout(tick, ADVANCE_MS);
+        return;
+      }
+
+      stepIdx.current += 1;
       setMessage(steps[stepIdx.current] || steps[steps.length - 1]);
       stepTimer.current = setTimeout(tick, ADVANCE_MS);
     };
@@ -87,10 +101,10 @@ export default function useAudit(testId: string | null) {
       clearTimers();
       setMessage('The test failed');
     }
-     
   }, [phase]);
 
   useEffect(() => {
+    // reset for new test
     clearTimers();
     setMetrics(null);
     setError(null);
@@ -104,29 +118,46 @@ export default function useAudit(testId: string | null) {
     setRunAt(undefined);
 
     if (!testId) return;
-    setLoading(true);
 
     let cancelled = false;
 
-    const poll = async (intervalMs: number) => {
+    const poll = async (intervalMs: number, firstHit = false) => {
       if (cancelled) return;
       try {
         const res = await fetch(`/api/check-status?testId=${encodeURIComponent(testId)}`, { cache: 'no-store' });
         const json: StatusPayload = await res.json();
-        const p = (json.phase || 'queued') as Phase;
+        const serverPhase = (json.phase || 'queued') as Phase;
 
         if (json.siteUrl) setSiteUrl(json.siteUrl);
         if (json.siteTitle) setSiteTitle(json.siteTitle);
         if (json.runAt) setRunAt(json.runAt);
 
-        setMonotonicPhase(p);
+        if (firstHit) {
+          // Decide the UX path before we flip any loading state.
+          if (serverPhase === 'finished' && json.metrics) {
+            // This is a previously finished run. No spinner, no "Running test...".
+            setMonotonicPhase('finished');
+            setMetrics(json.metrics);
+            setLoading(false);
+            return;
+          } else if (serverPhase === 'error') {
+            setMonotonicPhase('error');
+            setError('Test failed');
+            setLoading(false);
+            return;
+          }
+          // Only now show loading UI for true in-progress runs.
+          setLoading(true);
+        }
 
-        if (p === 'finished' && json.metrics) {
+        setMonotonicPhase(serverPhase);
+
+        if (serverPhase === 'finished' && json.metrics) {
           setMetrics(json.metrics);
           setLoading(false);
           return;
         }
-        if (p === 'error') {
+        if (serverPhase === 'error') {
           setError('Test failed');
           setLoading(false);
           return;
@@ -142,7 +173,8 @@ export default function useAudit(testId: string | null) {
       }
     };
 
-    poll(2000);
+    // First poll decides whether to show a spinner at all.
+    poll(2000, true);
 
     return () => {
       cancelled = true;

@@ -1,4 +1,5 @@
-// components/Recommendations.tsx
+import React from 'react';
+
 interface Metrics {
   ttfbMs: number;
   fcpMs: number;
@@ -19,7 +20,7 @@ export default function Recommendations({ metrics }: Props) {
     recs.push('Improve FCP: inline critical CSS, defer non-critical JS, preload key assets (fonts, hero image).');
   }
   if ((metrics.lcpMs ?? 0) > 2500) {
-    recs.push('Improve LCP: optimize hero media (compress/resize), set `fetchpriority="high"` on LCP image, and preconnect to critical origins.');
+    recs.push('Improve LCP: optimize hero media (compress/resize), set fetchpriority="high" on the LCP image, and preconnect to critical origins.');
   }
   if (metrics.speedIndexMs > 3400) {
     recs.push('Lower Speed Index: reduce render-blocking resources, split bundles, and prioritize above-the-fold content.');
@@ -37,9 +38,17 @@ export default function Recommendations({ metrics }: Props) {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold">Recommendations</h2>
-      <ul className="list-inside list-disc space-y-1 text-sm text-gray-800">
-        {recs.map((r, i) => <li key={i}>{r}</li>)}
+      <h2 className="text-lg font-semibold text-gray-900">Recommendations</h2>
+      <ul className="space-y-2">
+        {recs.map((r, i) => (
+          <li
+            key={i}
+            className="relative rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50 p-3 text-sm text-gray-800 shadow-sm"
+          >
+            <span className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-gradient-to-b from-indigo-500 to-sky-400" />
+            <div className="pl-3">{r}</div>
+          </li>
+        ))}
       </ul>
     </section>
   );
