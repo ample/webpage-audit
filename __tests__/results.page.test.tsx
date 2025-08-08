@@ -1,11 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import * as nextRouter from 'next/router';
 import ResultsPage from '@/pages/results';
-
-jest.spyOn(nextRouter, 'useRouter').mockReturnValue({
-  query: { testId: 'abc' },
-} as any);
 
 jest.mock('@lib/hooks/useAudit', () => ({
   __esModule: true,
@@ -15,7 +10,7 @@ jest.mock('@lib/hooks/useAudit', () => ({
 const useAudit = require('@lib/hooks/useAudit').default as jest.Mock;
 
 function renderPage() {
-  return render(<ResultsPage />);
+  return render(<ResultsPage testId="abc" />);
 }
 
 test('shows spinner and current status text while loading (user waiting for results)', () => {
@@ -27,6 +22,7 @@ test('shows spinner and current status text while loading (user waiting for resu
   });
   renderPage();
   expect(screen.getByText(/Results/)).toBeInTheDocument();
+  expect(screen.getByText(/Test ID: abc/)).toBeInTheDocument();
   expect(screen.getByText(/Reserving an available browser/)).toBeInTheDocument();
 });
 
@@ -36,7 +32,16 @@ test('shows metadata + metrics when finished (final report displayed)', () => {
       siteUrl: 'https://example.com',
       siteTitle: 'Example',
       runAt: '2025-08-08T12:00:00.000Z',
-      metrics: { ttfbMs: 1, fcpMs: 2, speedIndexMs: 3, lcpMs: 4, requests: 5, transferredBytes: 6, onLoadMs: 7, fullyLoadedMs: 8 },
+      metrics: {
+        ttfbMs: 1,
+        fcpMs: 2,
+        speedIndexMs: 3,
+        lcpMs: 4,
+        requests: 5,
+        transferredBytes: 6,
+        onLoadMs: 7,
+        fullyLoadedMs: 8,
+      },
     },
     loading: false,
     error: null,

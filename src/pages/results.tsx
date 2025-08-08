@@ -1,8 +1,10 @@
-import { useRouter } from 'next/router';
+import type { GetServerSideProps } from 'next';
 import useAudit from '@lib/hooks/useAudit';
 import LoadingSpinner from '@components/LoadingSpinner';
 import MetricsCards from '@components/MetricsCards';
 import Recommendations from '@components/Recommendations';
+
+type ResultsPageProps = { testId: string };
 
 function formatHost(u?: string) {
   try { return u ? new URL(u).host : ''; } catch { return ''; }
@@ -20,10 +22,7 @@ function formatRunDate(iso?: string) {
   }
 }
 
-export default function ResultsPage() {
-  const router = useRouter();
-  const testId = typeof router.query.testId === 'string' ? router.query.testId : null;
-
+export default function ResultsPage({ testId }: ResultsPageProps) {
   const { data, loading, error, statusText } = useAudit(testId);
 
   const title = data?.siteTitle || formatHost(data?.siteUrl);
@@ -37,11 +36,16 @@ export default function ResultsPage() {
             Results{title ? ` · ${title}` : ''}
           </h1>
           <div className="text-sm text-gray-600 space-x-2">
-            {testId && <span>Test ID: {testId}</span>}
+            <span>Test ID: {testId}</span>
             {data?.siteUrl && (
               <>
                 <span>•</span>
-                <a href={data.siteUrl} className="underline hover:no-underline" target="_blank" rel="noreferrer">
+                <a
+                  href={data.siteUrl}
+                  className="underline hover:no-underline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   {formatHost(data.siteUrl)}
                 </a>
               </>
@@ -55,9 +59,7 @@ export default function ResultsPage() {
           </div>
         </header>
 
-        {!testId && <p className="text-red-600">Missing testId. Go back and start a test.</p>}
-
-        {testId && loading && (
+        {loading && (
           <div className="flex items-center">
             <LoadingSpinner label={statusText || 'Running test…'} />
           </div>
@@ -77,3 +79,21 @@ export default function ResultsPage() {
     </main>
   );
 }
+
+export const getServerSideProps: GetServerSideProps<ResultsPageProps> = async (ctx) => {
+  const q = ctx.query?.testId;
+  const testId = typeof q === 'string' ? q.trim() : '';
+
+  if (!testId) {
+    return {
+      redirect: {
+        destination: '/',
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: { testId },
+  };
+};
