@@ -16,8 +16,8 @@ export type Metrics = {
 type Phase = 'queued' | 'running' | 'finished' | 'error';
 
 type Payload =
-  | { statusCode: number; statusText?: string; phase: Phase }
-  | { statusCode: 200; statusText?: string; phase: 'finished'; metrics: Metrics };
+  | { statusCode: number; statusText?: string; phase: Phase; siteUrl?: string; siteTitle?: string; runAt?: string }
+  | { statusCode: 200; statusText?: string; phase: 'finished'; metrics: Metrics; siteUrl?: string; siteTitle?: string; runAt?: string };
 
 const STATUS_TEXT_FALLBACK: Record<number, string> = {
   100: 'Test created',
@@ -28,6 +28,21 @@ const STATUS_TEXT_FALLBACK: Record<number, string> = {
   404: 'Not found',
   500: 'Server error',
 };
+
+async function fetchTitle(url: string, signal: AbortSignal): Promise<string | undefined> {
+  try {
+    const r = await fetch(url, {
+      redirect: 'follow',
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CRDS-Audit/1.0)' },
+      signal,
+    });
+    const html = await r.text();
+    const m = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    return m?.[1]?.trim();
+  } catch {
+    return undefined;
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -63,8 +78,19 @@ export default async function handler(
     else if (statusCode >= 400) phase = 'error';
     else if (statusCode >= 101) phase = 'running';
 
+    const siteUrl: string | undefined =
+      json?.data?.testUrl || json?.data?.url || json?.data?.summaryURL || undefined;
+
+    // Prefer WPT's completed time if available; fallback to "now" when composing the finished payload
+    const wptCompleted: string | undefined =
+      typeof json?.data?.completed === 'string'
+        ? json.data.completed
+        : typeof json?.data?.completed === 'number'
+        ? new Date(json.data.completed * 1000).toISOString()
+        : undefined;
+
     if (phase !== 'finished') {
-      return res.status(200).json({ statusCode, statusText, phase });
+      return res.status(200).json({ statusCode, statusText, phase, siteUrl });
     }
 
     const fv =
@@ -101,7 +127,20 @@ export default async function handler(
       fullyLoadedMs,
     };
 
-    return res.status(200).json({ statusCode, statusText, phase: 'finished', metrics });
+    // Resolve page title with a quick fetch+regex; timebox to 3s
+    let siteTitle: string | undefined;
+    if (siteUrl) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 3000);
+      siteTitle = await fetchTitle(siteUrl, ctrl.signal);
+      clearTimeout(t);
+    }
+
+    const runAt = wptCompleted || new Date().toISOString();
+
+    return res
+      .status(200)
+      .json({ statusCode, statusText, phase: 'finished', metrics, siteUrl, siteTitle, runAt });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unexpected error';
     return res.status(500).json({ error: message });

@@ -1,9 +1,16 @@
-// lib/hooks/useAudit.ts
 import { useEffect, useRef, useState } from 'react';
 import type { Metrics } from '@/pages/api/check-status';
 
 type Phase = 'queued' | 'running' | 'finished' | 'error';
-type StatusPayload = { statusCode?: number; phase?: Phase; metrics?: Metrics; error?: string };
+type StatusPayload = {
+  statusCode?: number;
+  phase?: Phase;
+  metrics?: Metrics;
+  error?: string;
+  siteUrl?: string;
+  siteTitle?: string;
+  runAt?: string;
+};
 
 const QUEUED_STEPS = [
   'Waiting for a test agent…',
@@ -18,21 +25,22 @@ const RUNNING_STEPS = [
   'Finalizing results…',
 ];
 
-const ADVANCE_MS = 4000; // progress step cadence while pending
+const ADVANCE_MS = 4000;
 
 export default function useAudit(testId: string | null) {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState<Phase | null>(null);
-  const [message, setMessage] = useState<string>(''); // friendly progress text
+  const [message, setMessage] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [siteUrl, setSiteUrl] = useState<string | undefined>(undefined);
+  const [siteTitle, setSiteTitle] = useState<string | undefined>(undefined);
+  const [runAt, setRunAt] = useState<string | undefined>(undefined);
 
   const pollTimer = useRef<NodeJS.Timeout | null>(null);
   const stepTimer = useRef<NodeJS.Timeout | null>(null);
   const stepIdx = useRef(0);
-  const lastPhaseIndex = useRef(0); // 0=queued,1=running,2=finished,3=error
-
-  // NEW: keep the *current* phase in a ref so timers don't capture stale state
+  const lastPhaseIndex = useRef(0);
   const phaseRef = useRef<Phase | null>(null);
 
   function clearTimers() {
@@ -48,8 +56,7 @@ export default function useAudit(testId: string | null) {
     if (next >= lastPhaseIndex.current) {
       lastPhaseIndex.current = next;
       setPhase(p);
-      phaseRef.current = p; // keep ref in sync
-      // reset step index when phase changes forward
+      phaseRef.current = p;
       stepIdx.current = 0;
     }
   }
@@ -57,15 +64,11 @@ export default function useAudit(testId: string | null) {
   function startStepRotation(forPhase: Phase) {
     if (stepTimer.current) clearTimeout(stepTimer.current);
     const steps = forPhase === 'queued' ? QUEUED_STEPS : RUNNING_STEPS;
-
-    // initialize
     stepIdx.current = 0;
     setMessage(steps[0] || '');
 
     const tick = () => {
-      // read the *live* phase from the ref, not the closed-over state
       if (phaseRef.current !== forPhase) return;
-
       stepIdx.current = Math.min(stepIdx.current + 1, steps.length - 1);
       setMessage(steps[stepIdx.current] || steps[steps.length - 1]);
       stepTimer.current = setTimeout(tick, ADVANCE_MS);
@@ -75,7 +78,6 @@ export default function useAudit(testId: string | null) {
   }
 
   useEffect(() => {
-    // whenever phase changes, decide message behavior
     if (phase === 'queued') startStepRotation('queued');
     else if (phase === 'running') startStepRotation('running');
     else if (phase === 'finished') {
@@ -89,7 +91,6 @@ export default function useAudit(testId: string | null) {
   }, [phase]);
 
   useEffect(() => {
-    // new test → reset state and start polling
     clearTimers();
     setMetrics(null);
     setError(null);
@@ -98,6 +99,9 @@ export default function useAudit(testId: string | null) {
     phaseRef.current = null;
     lastPhaseIndex.current = 0;
     stepIdx.current = 0;
+    setSiteUrl(undefined);
+    setSiteTitle(undefined);
+    setRunAt(undefined);
 
     if (!testId) return;
     setLoading(true);
@@ -110,6 +114,10 @@ export default function useAudit(testId: string | null) {
         const res = await fetch(`/api/check-status?testId=${encodeURIComponent(testId)}`, { cache: 'no-store' });
         const json: StatusPayload = await res.json();
         const p = (json.phase || 'queued') as Phase;
+
+        if (json.siteUrl) setSiteUrl(json.siteUrl);
+        if (json.siteTitle) setSiteTitle(json.siteTitle);
+        if (json.runAt) setRunAt(json.runAt);
 
         setMonotonicPhase(p);
 
@@ -124,7 +132,6 @@ export default function useAudit(testId: string | null) {
           return;
         }
 
-        // still pending: backoff a little (cap at ~6s)
         const next = Math.min(intervalMs + 1000, 6000);
         pollTimer.current = setTimeout(() => poll(next), next);
       } catch (e: unknown) {
@@ -143,5 +150,7 @@ export default function useAudit(testId: string | null) {
     };
   }, [testId]);
 
-  return { data: metrics && { metrics }, loading, phase, statusText: message, error };
+  const data = metrics && { metrics, siteUrl, siteTitle, runAt };
+
+  return { data, loading, phase, statusText: message, error };
 }
