@@ -202,7 +202,7 @@ export default function MetricsCards({ metrics }: Props) {
 
               <div className="mt-3 flex items-center gap-4">
                 {/* Gauge */}
-                <div className="shrink-0">{it.gauge}</div>
+                <div className="shrink-0 w-20 flex justify-center">{it.gauge}</div>
 
                 {/* Numbers */}
                 <div className="min-w-0">

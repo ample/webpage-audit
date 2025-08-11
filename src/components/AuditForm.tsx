@@ -25,7 +25,7 @@ export default function AuditForm({ disabled, onStart }: { disabled?: boolean; o
     <form className="flex flex-col gap-3 sm:flex-row" onSubmit={handleSubmit}>
       <input type="url" required disabled={disabled || submitting} value={url} onChange={(ev) => setUrl(ev.target.value)}
              placeholder="https://example.com" className="w-full rounded border border-gray-300 px-3 py-2" />
-      <button type="submit" disabled={disabled || submitting} className="rounded bg-blue-600 px-5 py-2 font-medium text-white hover:cursor-pointer">
+      <button type="submit" disabled={disabled || submitting} className="rounded bg-blue-600 px-5 py-2 font-medium text-white hover:cursor-pointer text-nowrap">
         {submitting ? 'Starting…' : 'Run Audit'}
       </button>
       {err && <p className="text-sm text-red-600">{err}</p>}
