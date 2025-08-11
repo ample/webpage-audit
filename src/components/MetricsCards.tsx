@@ -11,7 +11,21 @@ interface Metrics {
   onLoadMs: number;
   fullyLoadedMs: number;
 }
-interface Props { metrics: Metrics; }
+
+export type MetricDetail = {
+  key: string;
+  label: string;
+  rawValue: string;
+  idealDisplay: string;
+  percent: number;
+  pass: boolean;
+  description: string;
+};
+
+interface Props {
+  metrics: Metrics;
+  onSelect?: (detail: MetricDetail) => void;
+}
 
 const DESCRIPTIONS: Record<string, string> = {
   TTFB: 'Time to First Byte: how quickly your server starts responding. Lower is better.',
@@ -24,7 +38,6 @@ const DESCRIPTIONS: Record<string, string> = {
 
 function clamp01(v: number) { return Math.max(0, Math.min(1, v)); }
 
-// Text color tuned for dark surfaces
 function percentTextClass(p: number) {
   if (p >= 1) return 'text-emerald-400';
   if (p >= 0.8) return 'text-green-400';
@@ -32,7 +45,6 @@ function percentTextClass(p: number) {
   return 'text-rose-400';
 }
 
-// Bar fill on dark
 function percentBgClass(p: number) {
   if (p >= 1) return 'bg-emerald-500';
   if (p >= 0.8) return 'bg-green-500';
@@ -99,7 +111,7 @@ function BarGauge({ percent, label }: { percent: number; label: string; }) {
   );
 }
 
-export default function MetricsCards({ metrics }: Props) {
+export default function MetricsCards({ metrics, onSelect }: Props) {
   const ttfb = metrics.ttfbMs;
   const fcp = metrics.fcpMs;
   const si = metrics.speedIndexMs;
@@ -113,10 +125,10 @@ export default function MetricsCards({ metrics }: Props) {
     'Speed Index': 3400,
     LCP: 2500,
     Requests: 75,
-    Transferred: 2, // MB
+    Transferred: 2,
   };
 
-  const items = [
+  const items: MetricDetail[] = [
     {
       key: 'TTFB',
       label: 'TTFB',
@@ -124,7 +136,7 @@ export default function MetricsCards({ metrics }: Props) {
       idealDisplay: '≤ 0.80s',
       percent: ttfb > 0 ? ideals.TTFB / ttfb : 1,
       pass: ttfb <= ideals.TTFB,
-      gauge: <RingGauge percent={ttfb > 0 ? ideals.TTFB / ttfb : 1} label="TTFB" />,
+      description: DESCRIPTIONS['TTFB'],
     },
     {
       key: 'FCP',
@@ -133,7 +145,7 @@ export default function MetricsCards({ metrics }: Props) {
       idealDisplay: '≤ 1.80s',
       percent: fcp > 0 ? ideals.FCP / fcp : 1,
       pass: fcp <= ideals.FCP,
-      gauge: <RingGauge percent={fcp > 0 ? ideals.FCP / fcp : 1} label="FCP" />,
+      description: DESCRIPTIONS['FCP'],
     },
     {
       key: 'Speed Index',
@@ -142,7 +154,7 @@ export default function MetricsCards({ metrics }: Props) {
       idealDisplay: '≤ 3.40s',
       percent: si > 0 ? ideals['Speed Index'] / si : 1,
       pass: si <= ideals['Speed Index'],
-      gauge: <RingGauge percent={si > 0 ? ideals['Speed Index'] / si : 1} label="Speed Index" />,
+      description: DESCRIPTIONS['Speed Index'],
     },
     ...(lcp !== null ? [{
       key: 'LCP',
@@ -151,8 +163,8 @@ export default function MetricsCards({ metrics }: Props) {
       idealDisplay: '≤ 2.50s',
       percent: lcp > 0 ? ideals.LCP / lcp : 1,
       pass: lcp <= ideals.LCP,
-      gauge: <RingGauge percent={lcp > 0 ? ideals.LCP / lcp : 1} label="LCP" />,
-    }] : []),
+      description: DESCRIPTIONS['LCP'],
+    } as MetricDetail] : []),
     {
       key: 'Requests',
       label: 'Requests',
@@ -160,7 +172,7 @@ export default function MetricsCards({ metrics }: Props) {
       idealDisplay: '≤ 75',
       percent: req > 0 ? ideals.Requests / req : 1,
       pass: req <= ideals.Requests,
-      gauge: <BarGauge percent={req > 0 ? ideals.Requests / req : 1} label="Requests" />,
+      description: DESCRIPTIONS['Requests'],
     },
     {
       key: 'Transferred',
@@ -169,7 +181,7 @@ export default function MetricsCards({ metrics }: Props) {
       idealDisplay: '≤ 2.00MB',
       percent: mb > 0 ? ideals.Transferred / mb : 1,
       pass: mb <= ideals.Transferred,
-      gauge: <BarGauge percent={mb > 0 ? ideals.Transferred / mb : 1} label="Transferred" />,
+      description: DESCRIPTIONS['Transferred'],
     },
   ];
 
@@ -181,10 +193,20 @@ export default function MetricsCards({ metrics }: Props) {
         {items.map((it) => {
           const p = clamp01(it.percent);
           const textColor = percentTextClass(p);
+          const isBar = it.label === 'Requests' || it.label === 'Transferred';
+          const gauge = isBar ? (
+            <BarGauge percent={it.percent} label={it.label} />
+          ) : (
+            <RingGauge percent={it.percent} label={it.label} />
+          );
+
           return (
-            <div
+            <button
               key={it.key}
-              className="group relative rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              type="button"
+              onClick={() => onSelect?.(it)}
+              onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && onSelect) onSelect(it); }}
+              className="group relative w-full cursor-pointer text-left rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-sm transition hover:border-slate-500 hover:bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-sky-500"
             >
               <div className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-br from-indigo-500/0 via-sky-400/0 to-blue-400/0 opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-30" />
               <div className="flex items-start justify-between">
@@ -194,12 +216,12 @@ export default function MetricsCards({ metrics }: Props) {
                   </p>
                 </Tooltip>
                 <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs ${badgeClasses(it.pass)}`}>
-                  {it.pass ? 'Pass' : 'Needs Attention'}
+                  {it.pass ? 'Good' : 'Needs Improvement'}
                 </span>
               </div>
 
               <div className="mt-3 flex items-center gap-4">
-                <div className="shrink-0 w-20 flex justify-center">{it.gauge}</div>
+                <div className="shrink-0 w-20 flex justify-center">{gauge}</div>
                 <div className="min-w-0">
                   <div className="text-3xl font-bold tracking-tight text-slate-100">{it.rawValue}</div>
                   <div className="mt-1 text-xs text-slate-400">Target {it.idealDisplay}</div>
@@ -208,7 +230,7 @@ export default function MetricsCards({ metrics }: Props) {
                   </div>
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

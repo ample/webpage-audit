@@ -2,9 +2,10 @@ import type { GetServerSideProps } from 'next';
 import { useEffect, useState, useRef } from 'react';
 import useAudit from '@lib/hooks/useAudit';
 import LoadingSpinner from '@components/LoadingSpinner';
-import MetricsCards from '@components/MetricsCards';
+import MetricsCards, { type MetricDetail } from '@components/MetricsCards';
 import Recommendations from '@components/Recommendations';
 import AIRecommendations from '@components/AIRecommendations';
+import MetricModal from '@components/MetricModal';
 
 type ResultsPageProps = { testId: string };
 
@@ -32,6 +33,8 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
 
   const [showResults, setShowResults] = useState(false);
   const resultsRef = useRef<HTMLDivElement | null>(null);
+
+  const [selected, setSelected] = useState<MetricDetail | null>(null);
 
   useEffect(() => {
     if (data?.metrics && !showResults) {
@@ -93,7 +96,7 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
               showResults ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
             }`}
           >
-            <MetricsCards metrics={data.metrics} />
+            <MetricsCards metrics={data.metrics} onSelect={(d) => setSelected(d)} />
 
             <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-md backdrop-blur">
               <Recommendations metrics={data.metrics} />
@@ -105,6 +108,8 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
           </div>
         )}
       </section>
+
+      <MetricModal detail={selected} onClose={() => setSelected(null)} />
     </main>
   );
 }
