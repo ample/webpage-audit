@@ -1,4 +1,3 @@
-// components/MetricsCards.tsx
 import React from 'react';
 import Tooltip from '@components/Tooltip';
 
@@ -25,15 +24,15 @@ const DESCRIPTIONS: Record<string, string> = {
 
 function clamp01(v: number) { return Math.max(0, Math.min(1, v)); }
 
-// Text color (used by RingGauge where SVG stroke uses currentColor)
+// Text color tuned for dark surfaces
 function percentTextClass(p: number) {
-  if (p >= 1) return 'text-emerald-600';
-  if (p >= 0.8) return 'text-green-600';
-  if (p >= 0.6) return 'text-amber-500';
-  return 'text-rose-600';
+  if (p >= 1) return 'text-emerald-400';
+  if (p >= 0.8) return 'text-green-400';
+  if (p >= 0.6) return 'text-amber-400';
+  return 'text-rose-400';
 }
 
-// Background color (used by BarGauge fill)
+// Bar fill on dark
 function percentBgClass(p: number) {
   if (p >= 1) return 'bg-emerald-500';
   if (p >= 0.8) return 'bg-green-500';
@@ -43,8 +42,8 @@ function percentBgClass(p: number) {
 
 function badgeClasses(pass: boolean) {
   return pass
-    ? 'bg-emerald-100 text-emerald-800 ring-1 ring-inset ring-emerald-200'
-    : 'bg-rose-100 text-rose-800 ring-1 ring-inset ring-rose-200';
+    ? 'bg-emerald-950/50 text-emerald-300 ring-1 ring-inset ring-emerald-800'
+    : 'bg-rose-950/50 text-rose-300 ring-1 ring-inset ring-rose-800';
 }
 
 function RingGauge({
@@ -62,7 +61,7 @@ function RingGauge({
   return (
     <div className={`relative inline-block ${color}`} aria-label={`${label} gauge ${Math.round(p * 100)}%`}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img">
-        <circle cx={size/2} cy={size/2} r={r} stroke="currentColor" strokeWidth={stroke} opacity={0.15} fill="none" />
+        <circle cx={size/2} cy={size/2} r={r} stroke="currentColor" strokeWidth={stroke} opacity={0.2} fill="none" />
         <circle
           cx={size/2}
           cy={size/2}
@@ -75,7 +74,7 @@ function RingGauge({
           transform={`rotate(-90 ${size/2} ${size/2})`}
         />
       </svg>
-      <span className="absolute inset-0 grid place-items-center text-sm font-semibold text-gray-900">
+      <span className="absolute inset-0 grid place-items-center text-sm font-semibold text-slate-200">
         {Math.round(p * 100)}%
       </span>
     </div>
@@ -89,13 +88,13 @@ function BarGauge({ percent, label }: { percent: number; label: string; }) {
 
   return (
     <div className="w-full" aria-label={`${label} gauge ${pct}%`}>
-      <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
+      <div className="h-3 w-full overflow-hidden rounded-full bg-slate-700">
         <div
           className={`h-3 rounded-full ${bg} transition-all duration-500`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <div className="mt-1 text-xs text-gray-500">{pct}%</div>
+      <div className="mt-1 text-xs text-slate-400">{pct}%</div>
     </div>
   );
 }
@@ -108,7 +107,6 @@ export default function MetricsCards({ metrics }: Props) {
   const req = metrics.requests;
   const mb = metrics.transferredBytes / 1024 / 1024;
 
-  // Targets (meeting target => 100%)
   const ideals = {
     TTFB: 800,
     FCP: 1800,
@@ -177,7 +175,7 @@ export default function MetricsCards({ metrics }: Props) {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold tracking-tight text-gray-900">Key Metrics</h2>
+      <h2 className="text-xl font-semibold tracking-tight text-slate-100">Key Metrics</h2>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((it) => {
@@ -186,12 +184,12 @@ export default function MetricsCards({ metrics }: Props) {
           return (
             <div
               key={it.key}
-              className="group relative rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className="group relative rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
               <div className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-br from-indigo-500/0 via-sky-400/0 to-blue-400/0 opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-30" />
               <div className="flex items-start justify-between">
                 <Tooltip label={DESCRIPTIONS[it.label] || ''}>
-                  <p className="text-sm font-medium text-gray-700 underline decoration-dotted underline-offset-4">
+                  <p className="text-sm font-medium text-slate-300 underline decoration-dotted underline-offset-4">
                     {it.label}
                   </p>
                 </Tooltip>
@@ -201,13 +199,10 @@ export default function MetricsCards({ metrics }: Props) {
               </div>
 
               <div className="mt-3 flex items-center gap-4">
-                {/* Gauge */}
                 <div className="shrink-0 w-20 flex justify-center">{it.gauge}</div>
-
-                {/* Numbers */}
                 <div className="min-w-0">
-                  <div className="text-3xl font-bold tracking-tight text-gray-900">{it.rawValue}</div>
-                  <div className="mt-1 text-xs text-gray-500">Target {it.idealDisplay}</div>
+                  <div className="text-3xl font-bold tracking-tight text-slate-100">{it.rawValue}</div>
+                  <div className="mt-1 text-xs text-slate-400">Target {it.idealDisplay}</div>
                   <div className={`mt-2 text-xs font-medium ${textColor}`}>
                     {Math.round(p * 100)}% of target
                   </div>
@@ -218,13 +213,13 @@ export default function MetricsCards({ metrics }: Props) {
         })}
       </div>
 
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-slate-400">
         Reference:&nbsp;
-        <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">
+        <span className="inline-flex items-center rounded-full bg-slate-800 px-2 py-0.5 text-slate-300">
           onLoad {(metrics.onLoadMs / 1000).toFixed(2)}s
         </span>
-        <span className="mx-2 text-gray-300">•</span>
-        <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">
+        <span className="mx-2 text-slate-600">•</span>
+        <span className="inline-flex items-center rounded-full bg-slate-800 px-2 py-0.5 text-slate-300">
           Fully Loaded {(metrics.fullyLoadedMs / 1000).toFixed(2)}s
         </span>
       </p>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Metrics } from '@/pages/api/check-status';
+import { getAiInsights } from '@lib/api';
 
 type Phase = 'queued' | 'running' | 'finished' | 'error';
 type StatusPayload = {
@@ -37,6 +38,10 @@ export default function useAudit(testId: string | null) {
   const [siteTitle, setSiteTitle] = useState<string | undefined>(undefined);
   const [runAt, setRunAt] = useState<string | undefined>(undefined);
 
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
+
   const pollTimer = useRef<NodeJS.Timeout | null>(null);
   const stepTimer = useRef<NodeJS.Timeout | null>(null);
   const stepIdx = useRef(0);
@@ -72,13 +77,10 @@ export default function useAudit(testId: string | null) {
       if (phaseRef.current !== forPhase) return;
 
       if (stepIdx.current >= steps.length - 1) {
-        // For queued: if we hit the end of queued steps and are still visually queued,
-        // move to running messages to avoid looking stuck. (Server truth still controls completion.)
         if (forPhase === 'queued') {
           setMonotonicPhase('running');
           return;
         }
-        // For running: hold the last message with a gentle heartbeat.
         stepTimer.current = setTimeout(tick, ADVANCE_MS);
         return;
       }
@@ -117,6 +119,10 @@ export default function useAudit(testId: string | null) {
     setSiteTitle(undefined);
     setRunAt(undefined);
 
+    setAiSuggestions(null);
+    setAiError(null);
+    setAiLoading(false);
+
     if (!testId) return;
 
     let cancelled = false;
@@ -133,12 +139,20 @@ export default function useAudit(testId: string | null) {
         if (json.runAt) setRunAt(json.runAt);
 
         if (firstHit) {
-          // Decide the UX path before we flip any loading state.
           if (serverPhase === 'finished' && json.metrics) {
-            // This is a previously finished run. No spinner, no "Running test...".
             setMonotonicPhase('finished');
             setMetrics(json.metrics);
             setLoading(false);
+            // kick off AI on first resolution in case of an already-finished run
+            try {
+              setAiLoading(true);
+              const suggestions = await getAiInsights(json.metrics, json.siteUrl, json.siteTitle);
+              if (!cancelled) setAiSuggestions(suggestions);
+            } catch (e: unknown) {
+              if (!cancelled) setAiError(e instanceof Error ? e.message : 'AI failed');
+            } finally {
+              if (!cancelled) setAiLoading(false);
+            }
             return;
           } else if (serverPhase === 'error') {
             setMonotonicPhase('error');
@@ -146,7 +160,6 @@ export default function useAudit(testId: string | null) {
             setLoading(false);
             return;
           }
-          // Only now show loading UI for true in-progress runs.
           setLoading(true);
         }
 
@@ -155,6 +168,18 @@ export default function useAudit(testId: string | null) {
         if (serverPhase === 'finished' && json.metrics) {
           setMetrics(json.metrics);
           setLoading(false);
+
+          // Fire AI insights (best-effort)
+          try {
+            setAiLoading(true);
+            const suggestions = await getAiInsights(json.metrics, json.siteUrl, json.siteTitle);
+            if (!cancelled) setAiSuggestions(suggestions);
+          } catch (e: unknown) {
+            if (!cancelled) setAiError(e instanceof Error ? e.message : 'AI failed');
+          } finally {
+            if (!cancelled) setAiLoading(false);
+          }
+
           return;
         }
         if (serverPhase === 'error') {
@@ -173,7 +198,6 @@ export default function useAudit(testId: string | null) {
       }
     };
 
-    // First poll decides whether to show a spinner at all.
     poll(2000, true);
 
     return () => {
@@ -184,5 +208,5 @@ export default function useAudit(testId: string | null) {
 
   const data = metrics && { metrics, siteUrl, siteTitle, runAt };
 
-  return { data, loading, phase, statusText: message, error };
+  return { data, loading, phase, statusText: message, error, ai: { suggestions: aiSuggestions, loading: aiLoading, error: aiError } };
 }

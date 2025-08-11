@@ -38,12 +38,12 @@ export default function Recommendations({ metrics }: Props) {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold text-gray-900">Recommendations</h2>
+      <h2 className="text-lg font-semibold text-slate-100">Recommendations</h2>
       <ul className="space-y-2">
         {recs.map((r, i) => (
           <li
             key={i}
-            className="relative rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50 p-3 text-sm text-gray-800 shadow-sm"
+            className="relative rounded-xl border border-slate-700 bg-gradient-to-r from-slate-800 to-slate-800/60 p-3 text-sm text-slate-200 shadow-sm"
           >
             <span className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-gradient-to-b from-indigo-500 to-sky-400" />
             <div className="pl-3">{r}</div>

@@ -38,7 +38,7 @@ export default function LoadingSpinner({ label }: Props) {
           className="spinner-arc"
         />
       </svg>
-      {label && <span className="text-base">{label}</span>}
+      {label && <span className="text-white text-base">{label}</span>}
 
       <style jsx>{`
         @keyframes spin {

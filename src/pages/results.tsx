@@ -4,6 +4,7 @@ import useAudit from '@lib/hooks/useAudit';
 import LoadingSpinner from '@components/LoadingSpinner';
 import MetricsCards from '@components/MetricsCards';
 import Recommendations from '@components/Recommendations';
+import AIRecommendations from '@components/AIRecommendations';
 
 type ResultsPageProps = { testId: string };
 
@@ -24,7 +25,7 @@ function formatRunDate(iso?: string) {
 }
 
 export default function ResultsPage({ testId }: ResultsPageProps) {
-  const { data, loading, error, statusText, phase } = useAudit(testId);
+  const { data, loading, error, statusText, phase, ai } = useAudit(testId);
 
   const title = data?.siteTitle || formatHost(data?.siteUrl);
   const runDate = formatRunDate(data?.runAt);
@@ -39,27 +40,25 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
     }
   }, [data?.metrics, showResults]);
 
-  // If the hook is in any loading state and phase is already 'finished',
-  // we know we're just hydrating a completed run: change the label.
   const loadingLabel =
     phase === 'finished' ? 'Loading results…' : (statusText || 'Running test…');
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-white">
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
       <section className="mx-auto max-w-4xl px-6 py-12 space-y-10">
         <div className="rounded-2xl bg-gradient-to-r from-indigo-600 via-sky-500 to-blue-600 p-[1px] shadow-lg">
-          <header className="rounded-2xl bg-white px-6 py-6 sm:px-8">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          <header className="rounded-2xl bg-slate-900 px-6 py-6 sm:px-8">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-100">
               Results{title ? ` · ${title}` : ''}
             </h1>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-700">
-              <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-300">
+              <span className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1">
                 Test ID: {testId}
               </span>
               {data?.siteUrl && (
                 <a
                   href={data.siteUrl}
-                  className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-blue-700 underline decoration-blue-300 underline-offset-4 hover:no-underline"
+                  className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-sky-400 underline decoration-sky-600/60 underline-offset-4 hover:no-underline"
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -67,7 +66,7 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
                 </a>
               )}
               {runDate && (
-                <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
+                <span className="inline-flex items-center rounded-full bg-emerald-900/40 px-2.5 py-1 text-emerald-300">
                   Run: {runDate}
                 </span>
               )}
@@ -82,7 +81,7 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
         )}
 
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 shadow-sm">
+          <div className="rounded-xl border border-rose-800 bg-rose-950/40 p-4 text-rose-200 shadow-sm">
             {error}
           </div>
         )}
@@ -96,8 +95,12 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
           >
             <MetricsCards metrics={data.metrics} />
 
-            <div className="rounded-2xl border border-gray-200 bg-white/80 p-6 shadow-md backdrop-blur">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-md backdrop-blur">
               <Recommendations metrics={data.metrics} />
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-md backdrop-blur">
+              <AIRecommendations suggestions={ai.suggestions} loading={ai.loading} error={ai.error} />
             </div>
           </div>
         )}
