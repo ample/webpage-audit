@@ -34,7 +34,7 @@ export default function AuditForm({ disabled, onStart }: { disabled?: boolean; o
               type="button"
               onClick={() => setUseAiInsights(!useAiInsights)}
               disabled={disabled || submitting}
-              aria-label={`Switch to ${useAiInsights ? 'rule-based' : 'AI-powered'} recommendations`}
+              aria-label={`Switch to ${useAiInsights ? 'WebPageTest' : 'AI-powered'} recommendations`}
               className={`cursor-pointer relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 ${
                 useAiInsights ? 'bg-gradient-to-r from-purple-600 to-indigo-600' : 'bg-slate-600'
               }`}

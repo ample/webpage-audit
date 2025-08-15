@@ -1,11 +1,13 @@
 import type { GetServerSideProps } from 'next';
 import { useEffect, useState, useRef } from 'react';
+import Head from 'next/head';
 import useAudit from '@lib/hooks/useAudit';
 import LoadingSpinner from '@components/LoadingSpinner';
 import MetricsCards, { type MetricDetail } from '@components/MetricsCards';
 import Recommendations from '@components/Recommendations';
 import MetricModal from '@components/MetricModal';
 import TestTimer from '@components/TestTimer';
+import SiteHeader from '@components/SiteHeader';
 
 type ResultsPageProps = { testId: string };
 
@@ -55,8 +57,17 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
     phase === 'finished' ? 'Loading results…' : (statusText || 'Running test…');
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
-      <section className="mx-auto max-w-4xl px-6 py-12 space-y-10">
+    <>
+      <Head>
+        <title>{title ? `${title} - Site Audit Results` : 'Site Audit Results'}</title>
+        <meta name="description" content="WebPageTest performance audit results with detailed metrics and recommendations" />
+      </Head>
+      
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
+        <SiteHeader />
+        
+        <main>
+          <section className="mx-auto max-w-4xl px-6 py-12 space-y-10">
         <div className="rounded-2xl bg-gradient-to-r from-indigo-600 via-sky-500 to-blue-600 p-[1px] shadow-lg">
           <header className="rounded-2xl bg-slate-900 px-6 py-6 sm:px-8">
             <h1 className="text-3xl font-bold tracking-tight text-slate-100">
@@ -120,10 +131,12 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
             </div>
           </div>
         )}
-      </section>
+          </section>
+        </main>
 
-      <MetricModal detail={selected} onClose={() => setSelected(null)} />
-    </main>
+        <MetricModal detail={selected} onClose={() => setSelected(null)} />
+      </div>
+    </>
   );
 }
 
