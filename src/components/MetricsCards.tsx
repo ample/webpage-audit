@@ -206,9 +206,8 @@ export default function MetricsCards({ metrics, onSelect }: Props) {
               type="button"
               onClick={() => onSelect?.(it)}
               onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && onSelect) onSelect(it); }}
-              className="group relative w-full cursor-pointer text-left rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-sm transition hover:border-slate-500 hover:bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="group relative w-full cursor-pointer text-left rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-sm transition hover:border-slate-700 hover:bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-slate-500"
             >
-              <div className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-br from-indigo-500/0 via-sky-400/0 to-blue-400/0 opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-30" />
               <div className="flex items-start justify-between">
                 <Tooltip label={DESCRIPTIONS[it.label] || ''}>
                   <p className="text-sm font-medium text-slate-300 underline decoration-dotted underline-offset-4">

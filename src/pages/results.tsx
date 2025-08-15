@@ -59,8 +59,8 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
   return (
     <>
       <Head>
-        <title>{title ? `${title} - Site Audit Results` : 'Site Audit Results'}</title>
-        <meta name="description" content="WebPageTest performance audit results with detailed metrics and recommendations" />
+        <title>{title ? `${title} - Lightning Load Results` : 'Lightning Load Results'}</title>
+        <meta name="description" content="WebPageTest performance results with actionable insights to make your website load faster" />
       </Head>
       
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
@@ -68,8 +68,8 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
         
         <main>
           <section className="mx-auto max-w-4xl px-6 py-12 space-y-10">
-        <div className="rounded-2xl bg-gradient-to-r from-indigo-600 via-sky-500 to-blue-600 p-[1px] shadow-lg">
-          <header className="rounded-2xl bg-slate-900 px-6 py-6 sm:px-8">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
+          <header>
             <h1 className="text-3xl font-bold tracking-tight text-slate-100">
               Results{title ? ` · ${title}` : ''}
             </h1>

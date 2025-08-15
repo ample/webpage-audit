@@ -61,7 +61,7 @@ test('shows metadata + metrics when finished (final report displayed)', () => {
   renderPage();
   expect(screen.getByText('Results · Example')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'example.com' })).toBeInTheDocument();
-  expect(screen.getByText(/Requests/i)).toBeInTheDocument();
+  expect(screen.getByText('Key Metrics')).toBeInTheDocument();
 });
 
 test('shows error message if hook returns error (user sees failure message)', () => {

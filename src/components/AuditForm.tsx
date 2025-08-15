@@ -23,10 +23,10 @@ export default function AuditForm({ disabled, onStart }: { disabled?: boolean; o
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       {/* AI Insights Toggle */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4">
           <span className="text-sm font-medium text-slate-200">Recommendation Source</span>
           <div className="flex items-center space-x-2 text-xs text-slate-400">
             <span className={useAiInsights ? 'opacity-50' : 'opacity-100'}>WebPageTest</span>
@@ -34,9 +34,9 @@ export default function AuditForm({ disabled, onStart }: { disabled?: boolean; o
               type="button"
               onClick={() => setUseAiInsights(!useAiInsights)}
               disabled={disabled || submitting}
-              aria-label={`Switch to ${useAiInsights ? 'WebPageTest' : 'AI-powered'} recommendations`}
-              className={`cursor-pointer relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 ${
-                useAiInsights ? 'bg-gradient-to-r from-purple-600 to-indigo-600' : 'bg-slate-600'
+              aria-label={`Switch to ${useAiInsights ? 'rule-based' : 'AI-powered'} recommendations`}
+              className={`relative cursor-pointer inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 ${
+                useAiInsights ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-slate-600'
               }`}
             >
               <span
@@ -63,7 +63,7 @@ export default function AuditForm({ disabled, onStart }: { disabled?: boolean; o
         <button
           type="submit"
           disabled={disabled || submitting}
-          className="rounded bg-gradient-to-r from-indigo-600 to-sky-500 px-5 py-2 font-medium text-white hover:opacity-90 active:opacity-100 disabled:opacity-60 transition cursor-pointer text-nowrap"
+          className="rounded bg-gradient-to-r from-yellow-600 to-orange-500 px-5 py-2 font-semibold text-white text-shadow-lg hover:brightness-105 active:brightness-100 disabled:opacity-60 transition cursor-pointer text-nowrap shadow-lg hover:shadow-yellow-600/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
         >
           {submitting ? 'Starting…' : 'Run Audit'}
         </button>

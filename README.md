@@ -1,4 +1,15 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# Lightning Load ⚡
+
+Make your website lightning fast with comprehensive performance analysis and AI-powered optimization recommendations.
+
+## Features
+
+- **Lightning-Fast Analysis**: Quick WebPageTest performance audits
+- **AI-Powered Insights**: Get intelligent recommendations powered by Claude AI
+- **Real-Time Progress**: Live timer and status updates during testing
+- **Comprehensive Metrics**: Detailed performance metrics and Core Web Vitals
+- **Smart Recommendations**: Choose between rule-based or AI-generated suggestions
+- **Modern UI**: Clean, responsive interface with smooth animations
 
 ## Getting Started
 
@@ -8,33 +19,58 @@ First, run the development server:
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+## How It Works
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+1. **Enter a URL** - Input any website URL you want to optimize
+2. **Choose Analysis Type** - Toggle between rule-based or AI-powered recommendations
+3. **Run the Test** - Lightning Load analyzes your site's performance bottlenecks
+4. **Get Optimization Tips** - Receive actionable recommendations to make your site lightning fast
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create a `.env.local` file with:
 
-## Learn More
+```bash
+WPT_API_KEY=your_webpagetest_api_key
+CLAUDE_API_KEY=your_claude_api_key
+CLAUDE_MODEL=claude-3-5-sonnet-20240620
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first styling
+- **WebPageTest API** - Performance testing
+- **Claude AI** - Intelligent recommendations
+- **Jest** - Testing framework
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## API Routes
+
+- `/api/run-test` - Start a new WebPageTest
+- `/api/check-status` - Check test progress and results
+- `/api/ai-insights` - Generate AI-powered recommendations
+
+## Testing
+
+Run the test suite:
+
+```bash
+npm test
+# or
+yarn test
+```
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The easiest way to deploy Lightning Load is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+Check out the [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+
+## License
+
+MIT License - see LICENSE file for details.

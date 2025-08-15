@@ -208,7 +208,7 @@ export default function Recommendations({
               key={i}
               className="relative rounded-xl border border-slate-700 bg-slate-900/70 p-3 text-sm text-slate-200 shadow-sm"
             >
-              <span className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-gradient-to-b from-purple-500 to-indigo-500" />
+              <span className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-gradient-to-b from-slate-500 to-slate-600" />
               <div className="pl-3">{suggestion}</div>
             </li>
           ))}
@@ -230,7 +230,7 @@ export default function Recommendations({
             key={i}
             className="relative rounded-xl border border-slate-700 bg-gradient-to-r from-slate-800 to-slate-800/60 p-3 text-sm text-slate-200 shadow-sm"
           >
-            <span className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-gradient-to-b from-indigo-500 to-sky-400" />
+            <span className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-gradient-to-b from-slate-600 to-slate-700" />
             <div className="pl-3">{rec}</div>
           </li>
         ))}
