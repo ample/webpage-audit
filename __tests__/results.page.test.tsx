@@ -2,23 +2,32 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import ResultsPage from '@/pages/results';
 
+// Mock scrollIntoView which is not available in test environment
+Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+  value: jest.fn(),
+  writable: true,
+});
+
 jest.mock('@lib/hooks/useAudit', () => ({
   __esModule: true,
   default: jest.fn(),
 }));
 
-const useAudit = require('@lib/hooks/useAudit').default as jest.Mock;
+import useAudit from '@lib/hooks/useAudit';
+const mockUseAudit = useAudit as jest.Mock;
 
 function renderPage() {
   return render(<ResultsPage testId="abc" />);
 }
 
 test('shows spinner and current status text while loading (user waiting for results)', () => {
-  useAudit.mockReturnValue({
+  mockUseAudit.mockReturnValue({
     data: null,
     loading: true,
     error: null,
     statusText: 'Reserving an available browser…',
+    testStartTime: new Date(),
+    ai: { suggestions: null, loading: false, error: null },
   });
   renderPage();
   expect(screen.getByText(/Results/)).toBeInTheDocument();
@@ -27,7 +36,7 @@ test('shows spinner and current status text while loading (user waiting for resu
 });
 
 test('shows metadata + metrics when finished (final report displayed)', () => {
-  useAudit.mockReturnValue({
+  mockUseAudit.mockReturnValue({
     data: {
       siteUrl: 'https://example.com',
       siteTitle: 'Example',
@@ -46,6 +55,8 @@ test('shows metadata + metrics when finished (final report displayed)', () => {
     loading: false,
     error: null,
     statusText: '',
+    testStartTime: null,
+    ai: { suggestions: null, loading: false, error: null },
   });
   renderPage();
   expect(screen.getByText('Results · Example')).toBeInTheDocument();
@@ -54,11 +65,13 @@ test('shows metadata + metrics when finished (final report displayed)', () => {
 });
 
 test('shows error message if hook returns error (user sees failure message)', () => {
-  useAudit.mockReturnValue({
+  mockUseAudit.mockReturnValue({
     data: null,
     loading: false,
     error: 'Polling failed',
     statusText: '',
+    testStartTime: null,
+    ai: { suggestions: null, loading: false, error: null },
   });
   renderPage();
   expect(screen.getByText('Polling failed')).toBeInTheDocument();
