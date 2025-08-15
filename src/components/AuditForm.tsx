@@ -29,7 +29,7 @@ export default function AuditForm({ disabled, onStart }: { disabled?: boolean; o
         <div className="flex items-center space-x-3">
           <span className="text-sm font-medium text-slate-200">Recommendation Source</span>
           <div className="flex items-center space-x-2 text-xs text-slate-400">
-            <span className={useAiInsights ? 'opacity-50' : 'opacity-100'}>Rule-based</span>
+            <span className={useAiInsights ? 'opacity-50' : 'opacity-100'}>WebPageTest</span>
             <button
               type="button"
               onClick={() => setUseAiInsights(!useAiInsights)}
