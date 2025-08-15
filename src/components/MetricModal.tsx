@@ -162,7 +162,7 @@ export default function MetricModal({
           <button
             onClick={onClose}
             aria-label="Close"
-            className="absolute right-3 top-3 rounded-md p-2 text-slate-300 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            className="absolute right-3 top-3 rounded-md p-2 text-slate-300 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
           >
             ✕
           </button>

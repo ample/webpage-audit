@@ -40,8 +40,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     };
 
     const prompt = [
-      'You are a web performance engineer. Given these WebPageTest summary results, return 3-5 concrete, high-impact recommendations.',
-      'Focus on server TTFB, render-blocking resources, image/media optimization, third-party scripts, and delivery (preload/preconnect, HTTP/2).',
+      'You are a friendly web performance consultant. Given these WebPageTest results, provide 3-5 recommendations.',
+      'Write in a casual, supportive but profressional tone. Assume the user is moderately technical. Try not to repeat yourself across recommendations.',
+      'Do not add superfluous greetings or refer to yourself in the first person.',
+      'Focus on the biggest wins: server response time, render-blocking resources, image optimization, third-party scripts, and resource delivery.',
+      'Make each recommendation feel approachable and explain the "why" briefly. Avoid overly-technical jargon and focus on highest impact points',
       'Return ONLY a JSON array of strings. No prose, no keys.',
       '',
       JSON.stringify(summary, null, 2),
@@ -57,7 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       body: JSON.stringify({
         model: MODEL,
         max_tokens: 400,
-        system: 'Respond with concise, actionable web performance advice.',
+        system: 'You are a helpful, encouraging web performance consultant. Write recommendations in a friendly, conversational tone that makes optimization feel approachable and achievable.',
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -65,10 +68,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const json = await r.json();
 
     if (!r.ok) {
-      return res.status(r.status as any).json({ error: json?.error?.message || 'AI request failed' });
+      return res.status(r.status).json({ error: json?.error?.message || 'AI request failed' });
     }
 
-    const textBlock = Array.isArray(json?.content) && json.content.find((b: any) => b?.type === 'text');
+    const textBlock = Array.isArray(json?.content) && json.content.find((b: { type?: string }) => b?.type === 'text');
     const text = textBlock?.text || '';
 
     let suggestions: string[] = [];

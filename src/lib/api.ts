@@ -35,9 +35,6 @@ export async function getAiInsights(
   siteUrl?: string,
   siteTitle?: string
 ): Promise<string[]> {
-  // Uncomment to disable AI calls entirely.
-  return [];
-
   try {
     const res = await fetch('/api/ai-insights', {
       method: 'POST',

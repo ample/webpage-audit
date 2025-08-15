@@ -4,8 +4,8 @@ import useAudit from '@lib/hooks/useAudit';
 import LoadingSpinner from '@components/LoadingSpinner';
 import MetricsCards, { type MetricDetail } from '@components/MetricsCards';
 import Recommendations from '@components/Recommendations';
-import AIRecommendations from '@components/AIRecommendations';
 import MetricModal from '@components/MetricModal';
+import TestTimer from '@components/TestTimer';
 
 type ResultsPageProps = { testId: string };
 
@@ -26,7 +26,15 @@ function formatRunDate(iso?: string) {
 }
 
 export default function ResultsPage({ testId }: ResultsPageProps) {
-  const { data, loading, error, statusText, phase, ai } = useAudit(testId);
+  const { data, loading, error, statusText, phase, testStartTime, ai } = useAudit(testId);
+  
+  // Check for AI feature flag in query params
+  const [useAiInsights, setUseAiInsights] = useState(false);
+  
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    setUseAiInsights(urlParams.get('ai') === 'true');
+  }, []);
 
   const title = data?.siteTitle || formatHost(data?.siteUrl);
   const runDate = formatRunDate(data?.runAt);
@@ -78,8 +86,11 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
         </div>
 
         {loading && (
-          <div className="flex items-center">
-            <LoadingSpinner label={loadingLabel} />
+          <div className="space-y-3">
+            <div className="flex items-center">
+              <LoadingSpinner label={loadingLabel} />
+            </div>
+            <TestTimer startTime={testStartTime} />
           </div>
         )}
 
@@ -99,11 +110,13 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
             <MetricsCards metrics={data.metrics} onSelect={(d) => setSelected(d)} />
 
             <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-md backdrop-blur">
-              <Recommendations metrics={data.metrics} />
-            </div>
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-md backdrop-blur">
-              <AIRecommendations suggestions={ai.suggestions} loading={ai.loading} error={ai.error} />
+              <Recommendations 
+                metrics={data.metrics}
+                aiSuggestions={ai.suggestions}
+                aiLoading={ai.loading}
+                aiError={ai.error}
+                useAiInsights={useAiInsights}
+              />
             </div>
           </div>
         )}

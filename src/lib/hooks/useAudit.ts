@@ -26,6 +26,12 @@ const RUNNING_STEPS = [
   'Finalizing results…',
 ];
 
+const AI_STEPS = [
+  'Generating AI insights…',
+  'Analyzing performance data…',
+  'Crafting recommendations…',
+];
+
 const ADVANCE_MS = 4000;
 
 export default function useAudit(testId: string | null) {
@@ -37,6 +43,7 @@ export default function useAudit(testId: string | null) {
   const [siteUrl, setSiteUrl] = useState<string | undefined>(undefined);
   const [siteTitle, setSiteTitle] = useState<string | undefined>(undefined);
   const [runAt, setRunAt] = useState<string | undefined>(undefined);
+  const [testStartTime, setTestStartTime] = useState<Date | null>(null);
 
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -93,6 +100,26 @@ export default function useAudit(testId: string | null) {
     stepTimer.current = setTimeout(tick, ADVANCE_MS);
   }
 
+  function startAiStepRotation() {
+    if (stepTimer.current) clearTimeout(stepTimer.current);
+
+    stepIdx.current = 0;
+    setMessage(AI_STEPS[0] || '');
+
+    const tick = () => {
+      if (stepIdx.current >= AI_STEPS.length - 1) {
+        stepTimer.current = setTimeout(tick, ADVANCE_MS);
+        return;
+      }
+
+      stepIdx.current += 1;
+      setMessage(AI_STEPS[stepIdx.current] || AI_STEPS[AI_STEPS.length - 1]);
+      stepTimer.current = setTimeout(tick, ADVANCE_MS);
+    };
+
+    stepTimer.current = setTimeout(tick, ADVANCE_MS);
+  }
+
   useEffect(() => {
     if (phase === 'queued') startStepRotation('queued');
     else if (phase === 'running') startStepRotation('running');
@@ -122,8 +149,12 @@ export default function useAudit(testId: string | null) {
     setAiSuggestions(null);
     setAiError(null);
     setAiLoading(false);
+    setTestStartTime(null);
 
     if (!testId) return;
+
+    // Set test start time when we begin polling
+    setTestStartTime(new Date());
 
     let cancelled = false;
 
@@ -141,17 +172,40 @@ export default function useAudit(testId: string | null) {
         if (firstHit) {
           if (serverPhase === 'finished' && json.metrics) {
             setMonotonicPhase('finished');
-            setMetrics(json.metrics);
-            setLoading(false);
-            // kick off AI on first resolution in case of an already-finished run
-            try {
-              setAiLoading(true);
-              const suggestions = await getAiInsights(json.metrics, json.siteUrl, json.siteTitle);
-              if (!cancelled) setAiSuggestions(suggestions);
-            } catch (e: unknown) {
-              if (!cancelled) setAiError(e instanceof Error ? e.message : 'AI failed');
-            } finally {
-              if (!cancelled) setAiLoading(false);
+            
+            // Check if we need AI insights based on URL params
+            const urlParams = new URLSearchParams(window.location.search);
+            const needsAiInsights = urlParams.get('ai') === 'true';
+            
+            if (needsAiInsights) {
+              // Keep loading until AI insights are ready - don't set metrics yet
+              startAiStepRotation();
+              try {
+                setAiLoading(true);
+                const suggestions = await getAiInsights(json.metrics, json.siteUrl, json.siteTitle);
+                if (!cancelled) {
+                  setAiSuggestions(suggestions);
+                  setMetrics(json.metrics); // Set metrics only after AI is done
+                  setLoading(false);
+                  clearTimers();
+                  setMessage('Done');
+                }
+              } catch (e: unknown) {
+                if (!cancelled) {
+                  setAiError(e instanceof Error ? e.message : 'AI failed');
+                  setMetrics(json.metrics); // Set metrics even if AI fails
+                  setLoading(false);
+                  clearTimers();
+                  setMessage('Done');
+                }
+              } finally {
+                if (!cancelled) setAiLoading(false);
+              }
+            } else {
+              // No AI needed, set metrics and stop loading immediately
+              setMetrics(json.metrics);
+              setLoading(false);
+              setMessage('Done');
             }
             return;
           } else if (serverPhase === 'error') {
@@ -166,18 +220,38 @@ export default function useAudit(testId: string | null) {
         setMonotonicPhase(serverPhase);
 
         if (serverPhase === 'finished' && json.metrics) {
-          setMetrics(json.metrics);
-          setLoading(false);
-
-          // Fire AI insights (best-effort)
-          try {
-            setAiLoading(true);
-            const suggestions = await getAiInsights(json.metrics, json.siteUrl, json.siteTitle);
-            if (!cancelled) setAiSuggestions(suggestions);
-          } catch (e: unknown) {
-            if (!cancelled) setAiError(e instanceof Error ? e.message : 'AI failed');
-          } finally {
-            if (!cancelled) setAiLoading(false);
+          // Check if we need AI insights based on URL params
+          const urlParams = new URLSearchParams(window.location.search);
+          const needsAiInsights = urlParams.get('ai') === 'true';
+          
+          if (needsAiInsights) {
+            // Keep loading until AI insights are ready - don't set metrics yet
+            startAiStepRotation();
+            try {
+              setAiLoading(true);
+              const suggestions = await getAiInsights(json.metrics, json.siteUrl, json.siteTitle);
+              if (!cancelled) {
+                setAiSuggestions(suggestions);
+                setMetrics(json.metrics); // Set metrics only after AI is done
+                setLoading(false);
+                clearTimers();
+                setMessage('Done');
+              }
+            } catch (e: unknown) {
+              if (!cancelled) {
+                setAiError(e instanceof Error ? e.message : 'AI failed');
+                setMetrics(json.metrics); // Set metrics even if AI fails
+                setLoading(false);
+                clearTimers();
+                setMessage('Done');
+              }
+            } finally {
+              if (!cancelled) setAiLoading(false);
+            }
+          } else {
+            // No AI needed, set metrics and stop loading immediately
+            setMetrics(json.metrics);
+            setLoading(false);
           }
 
           return;
@@ -208,5 +282,5 @@ export default function useAudit(testId: string | null) {
 
   const data = metrics && { metrics, siteUrl, siteTitle, runAt };
 
-  return { data, loading, phase, statusText: message, error, ai: { suggestions: aiSuggestions, loading: aiLoading, error: aiError } };
+  return { data, loading, phase, statusText: message, error, testStartTime, ai: { suggestions: aiSuggestions, loading: aiLoading, error: aiError } };
 }

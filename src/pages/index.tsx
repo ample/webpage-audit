@@ -17,9 +17,13 @@ export default function Home() {
         <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-md">
           <AuditForm
             disabled={busy}
-            onStart={(id) => {
+            onStart={(id, useAiInsights) => {
               setBusy(true);
-              router.push(`/results?testId=${encodeURIComponent(id)}`);
+              const params = new URLSearchParams({ testId: id });
+              if (useAiInsights) {
+                params.set('ai', 'true');
+              }
+              router.push(`/results?${params.toString()}`);
             }}
           />
         </div>
