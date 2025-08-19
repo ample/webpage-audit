@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Head from 'next/head';
 import AuditForm from '@components/AuditForm';
 import SiteHeader from '@components/SiteHeader';
+import RecentTests from '@components/RecentTests';
 
 export default function Home() {
   const router = useRouter();
@@ -11,18 +12,18 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Lightning Load - Make Your Website Lightning Fast</title>
+        <title>Lightning Load - Insights To Make Your Website Lightning Fast</title>
         <meta name="description" content="Optimize your website's performance with WebPageTest audits and AI-powered recommendations to make your site load at lightning speed" />
       </Head>
-      
+
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
         <SiteHeader />
-        
+
         <main>
           <section className="mx-auto max-w-3xl px-6 py-10 space-y-8">
             <header className="text-center space-y-2">
-              <h1 className="text-3xl font-bold text-slate-100">Make Your Website Lightning Fast</h1>
-              <p className="text-slate-400">Run a WebPageTest-powered site audit and get actionable AI recommendations to make it load at lightning speed.</p>
+              <h1 className="text-3xl font-bold text-slate-100">Insights To Make Your Website Lightning Fast</h1>
+              <p className="text-slate-300">Run a WebPageTest-powered site audit and get actionable AI recommendations to make it load at lightning speed.</p>
             </header>
 
             <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-md">
@@ -31,13 +32,13 @@ export default function Home() {
                 onStart={(id, useAiInsights) => {
                   setBusy(true);
                   const params = new URLSearchParams({ testId: id });
-                  if (useAiInsights) {
-                    params.set('ai', 'true');
-                  }
+                  if (useAiInsights) params.set('ai', 'true');
                   router.push(`/results?${params.toString()}`);
                 }}
               />
             </div>
+
+            <RecentTests />
           </section>
         </main>
       </div>

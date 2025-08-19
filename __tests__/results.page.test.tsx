@@ -2,6 +2,17 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import ResultsPage from '@/pages/results';
 
+jest.mock('next/router', () => ({
+  __esModule: true,
+  useRouter: () => ({
+    push: jest.fn(),
+    prefetch: jest.fn(),
+    pathname: '/results',
+    query: {},
+    replace: jest.fn(),
+  }),
+}));
+
 // Mock scrollIntoView which is not available in test environment
 Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
   value: jest.fn(),
@@ -76,3 +87,36 @@ test('shows error message if hook returns error (user sees failure message)', ()
   renderPage();
   expect(screen.getByText('Polling failed')).toBeInTheDocument();
 });
+
+test('shows metadata + metrics when finished (final report displayed)', () => {
+  mockUseAudit.mockReturnValue({
+    data: {
+      siteUrl: 'https://example.com',
+      siteTitle: 'Example',
+      runAt: '2025-08-08T12:00:00.000Z',
+      summaryUrl: 'https://www.webpagetest.org/result/abc/',
+      jsonUrl: 'https://www.webpagetest.org/jsonResult.php?test=abc&f=json',
+      metrics: {
+        ttfbMs: 1,
+        fcpMs: 2,
+        speedIndexMs: 3,
+        lcpMs: 4,
+        requests: 5,
+        transferredBytes: 6,
+        onLoadMs: 7,
+        fullyLoadedMs: 8,
+      },
+    },
+    loading: false,
+    error: null,
+    statusText: '',
+    testStartTime: null,
+    ai: { suggestions: null, loading: false, error: null },
+  });
+  renderPage();
+  expect(screen.getByText('Results · Example')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'example.com' })).toBeInTheDocument();
+  expect(screen.getByText('Key Metrics')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /WebPageTest report/i })).toBeInTheDocument();
+});
+

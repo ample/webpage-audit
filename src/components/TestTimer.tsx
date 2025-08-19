@@ -28,7 +28,7 @@ export default function TestTimer({ startTime }: Props) {
   if (!startTime) return null;
 
   return (
-    <div className="text-sm text-slate-400">
+    <div className="text-sm text-slate-300">
       Test started {elapsed} second{elapsed !== 1 ? 's' : ''} ago
     </div>
   );

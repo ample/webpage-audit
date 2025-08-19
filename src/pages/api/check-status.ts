@@ -16,8 +16,8 @@ export type Metrics = {
 type Phase = 'queued' | 'running' | 'finished' | 'error';
 
 type Payload =
-  | { statusCode: number; statusText?: string; phase: Phase; siteUrl?: string; siteTitle?: string; runAt?: string }
-  | { statusCode: 200; statusText?: string; phase: 'finished'; metrics: Metrics; siteUrl?: string; siteTitle?: string; runAt?: string };
+  | { statusCode: number; statusText?: string; phase: Phase; siteUrl?: string; siteTitle?: string; runAt?: string; summaryUrl?: string; jsonUrl?: string }
+  | { statusCode: 200; statusText?: string; phase: 'finished'; metrics: Metrics; siteUrl?: string; siteTitle?: string; runAt?: string; summaryUrl?: string; jsonUrl?: string };
 
 const STATUS_TEXT_FALLBACK: Record<number, string> = {
   100: 'Test created',
@@ -31,11 +31,7 @@ const STATUS_TEXT_FALLBACK: Record<number, string> = {
 
 async function fetchTitle(url: string, signal: AbortSignal): Promise<string | undefined> {
   try {
-    const r = await fetch(url, {
-      redirect: 'follow',
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CRDS-Audit/1.0)' },
-      signal,
-    });
+    const r = await fetch(url, { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CRDS-Audit/1.0)' }, signal });
     const html = await r.text();
     const m = html.match(/<title[^>]*>([^<]+)<\/title>/i);
     return m?.[1]?.trim();
@@ -44,44 +40,31 @@ async function fetchTitle(url: string, signal: AbortSignal): Promise<string | un
   }
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<Payload | { error: string }>
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse<Payload | { error: string }>) {
   const testId = req.query.testId;
   if (!testId || typeof testId !== 'string') {
     return res.status(400).json({ error: 'Missing testId' });
   }
 
   try {
-    const r = await fetch(
-      `${WPT_BASE}/jsonResult.php?test=${encodeURIComponent(testId)}&f=json`,
-      {
-        headers: {
-          Accept: 'application/json',
-          'X-WPT-API-KEY': process.env.WPT_API_KEY ?? '',
-        },
-        cache: 'no-store',
-      }
-    );
+    const r = await fetch(`${WPT_BASE}/jsonResult.php?test=${encodeURIComponent(testId)}&f=json`, {
+      headers: { Accept: 'application/json', 'X-WPT-API-KEY': process.env.WPT_API_KEY ?? '' },
+      cache: 'no-store',
+    });
 
     const json = await r.json();
 
     const statusCode: number = Number(json?.statusCode ?? 0);
     const statusText: string | undefined =
-      typeof json?.statusText === 'string'
-        ? json.statusText
-        : STATUS_TEXT_FALLBACK[statusCode];
+      typeof json?.statusText === 'string' ? json.statusText : STATUS_TEXT_FALLBACK[statusCode];
 
     let phase: Phase = 'queued';
     if (statusCode === 200) phase = 'finished';
     else if (statusCode >= 400) phase = 'error';
     else if (statusCode >= 101) phase = 'running';
 
-    const siteUrl: string | undefined =
-      json?.data?.testUrl || json?.data?.url || json?.data?.summaryURL || undefined;
+    const siteUrl: string | undefined = json?.data?.testUrl || json?.data?.url || json?.data?.summaryURL || undefined;
 
-    // Prefer WPT's completed time if available; fallback to "now" when composing the finished payload
     const wptCompleted: string | undefined =
       typeof json?.data?.completed === 'string'
         ? json.data.completed
@@ -89,12 +72,14 @@ export default async function handler(
         ? new Date(json.data.completed * 1000).toISOString()
         : undefined;
 
+    const summaryUrl = `${WPT_BASE}/result/${encodeURIComponent(testId)}/`;
+    const jsonUrl = `${WPT_BASE}/jsonResult.php?test=${encodeURIComponent(testId)}&f=json`;
+
     if (phase !== 'finished') {
-      return res.status(200).json({ statusCode, statusText, phase, siteUrl });
+      return res.status(200).json({ statusCode, statusText, phase, siteUrl, summaryUrl, jsonUrl });
     }
 
-    const fv =
-      json?.data?.runs?.['1']?.firstView ?? json?.data?.average?.firstView;
+    const fv = json?.data?.runs?.['1']?.firstView ?? json?.data?.average?.firstView;
     if (!fv) return res.status(502).json({ error: 'Missing firstView in WPT response' });
 
     const ttfbMs = Number(fv.TTFB ?? fv.ttfb ?? 0) || 0;
@@ -116,18 +101,8 @@ export default async function handler(
     if (typeof lhLcp === 'number') lcpMs = lhLcp;
     else if (typeof chromeLcp === 'number') lcpMs = chromeLcp;
 
-    const metrics: Metrics = {
-      ttfbMs,
-      fcpMs,
-      speedIndexMs,
-      lcpMs,
-      requests,
-      transferredBytes,
-      onLoadMs,
-      fullyLoadedMs,
-    };
+    const metrics: Metrics = { ttfbMs, fcpMs, speedIndexMs, lcpMs, requests, transferredBytes, onLoadMs, fullyLoadedMs };
 
-    // Resolve page title with a quick fetch+regex; timebox to 3s
     let siteTitle: string | undefined;
     if (siteUrl) {
       const ctrl = new AbortController();
@@ -138,9 +113,7 @@ export default async function handler(
 
     const runAt = wptCompleted || new Date().toISOString();
 
-    return res
-      .status(200)
-      .json({ statusCode, statusText, phase: 'finished', metrics, siteUrl, siteTitle, runAt });
+    return res.status(200).json({ statusCode, statusText, phase: 'finished', metrics, siteUrl, siteTitle, runAt, summaryUrl, jsonUrl });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unexpected error';
     return res.status(500).json({ error: message });

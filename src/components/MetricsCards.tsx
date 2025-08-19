@@ -105,7 +105,7 @@ function BarGauge({ percent, label }: { percent: number; label: string; }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <div className="mt-1 text-xs text-slate-400">{pct}%</div>
+      <div className="mt-1 text-xs text-slate-300">{pct}%</div>
     </div>
   );
 }
@@ -222,7 +222,7 @@ export default function MetricsCards({ metrics, onSelect }: Props) {
                 <div className="shrink-0 w-20 flex justify-center">{gauge}</div>
                 <div className="min-w-0">
                   <div className="text-3xl font-bold tracking-tight text-slate-100">{it.rawValue}</div>
-                  <div className="mt-1 text-xs text-slate-400">Target {it.idealDisplay}</div>
+                  <div className="mt-1 text-xs text-slate-300">Target {it.idealDisplay}</div>
                   <div className={`mt-2 text-xs font-medium ${textColor}`}>
                     {Math.round(p * 100)}% of target
                   </div>
@@ -233,7 +233,7 @@ export default function MetricsCards({ metrics, onSelect }: Props) {
         })}
       </div>
 
-      <p className="text-sm text-slate-400">
+      <p className="text-sm text-slate-300">
         Reference:&nbsp;
         <span className="inline-flex items-center rounded-full bg-slate-800 px-2 py-0.5 text-slate-300">
           onLoad {(metrics.onLoadMs / 1000).toFixed(2)}s

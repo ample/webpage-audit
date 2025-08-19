@@ -9,11 +9,11 @@ export interface CheckStatusResponse {
   error?: string;
 }
 
-export async function runTest(url: string): Promise<RunTestResponse> {
+export async function runTest(url: string, location?: string): Promise<RunTestResponse> {
   const res = await fetch('/api/run-test', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ url, ...(location ? { location } : {}) }),
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error || 'Failed to start test');

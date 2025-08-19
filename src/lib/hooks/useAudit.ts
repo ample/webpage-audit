@@ -1,3 +1,4 @@
+// lib/hooks/useAudit.ts
 import { useEffect, useRef, useState } from 'react';
 import type { Metrics } from '@/pages/api/check-status';
 import { getAiInsights } from '@lib/api';
@@ -11,6 +12,9 @@ type StatusPayload = {
   siteUrl?: string;
   siteTitle?: string;
   runAt?: string;
+  statusText?: string;
+  summaryUrl?: string;
+  jsonUrl?: string;
 };
 
 const QUEUED_STEPS = [
@@ -34,21 +38,41 @@ const AI_STEPS = [
 
 const ADVANCE_MS = 4000;
 
+type Recent = { testId: string; url?: string; title?: string; runAt?: string };
+
+function saveRecent(testId: string, url?: string, title?: string, runAt?: string) {
+  try {
+    const key = 'll:recent-tests';
+    const arr: Recent[] = JSON.parse(localStorage.getItem(key) || '[]');
+    const next = [{ testId, url, title, runAt }, ...arr.filter((r) => r.testId !== testId)].slice(0, 6);
+    localStorage.setItem(key, JSON.stringify(next));
+  } catch {}
+}
+
 export default function useAudit(testId: string | null) {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // progress state
   const [phase, setPhase] = useState<Phase | null>(null);
-  const [message, setMessage] = useState<string>('');
+  const [stepMessage, setStepMessage] = useState<string>('');     // rotating local steps
+  const [serverStatus, setServerStatus] = useState<string>('');    // raw server status (generic)
   const [error, setError] = useState<string | null>(null);
+
+  // metadata
   const [siteUrl, setSiteUrl] = useState<string | undefined>(undefined);
   const [siteTitle, setSiteTitle] = useState<string | undefined>(undefined);
   const [runAt, setRunAt] = useState<string | undefined>(undefined);
+  const [summaryUrl, setSummaryUrl] = useState<string | undefined>(undefined);
+  const [jsonUrl, setJsonUrl] = useState<string | undefined>(undefined);
   const [testStartTime, setTestStartTime] = useState<Date | null>(null);
 
+  // AI
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
 
+  // timers & refs
   const pollTimer = useRef<NodeJS.Timeout | null>(null);
   const stepTimer = useRef<NodeJS.Timeout | null>(null);
   const stepIdx = useRef(0);
@@ -78,7 +102,7 @@ export default function useAudit(testId: string | null) {
     const steps = forPhase === 'queued' ? QUEUED_STEPS : RUNNING_STEPS;
 
     stepIdx.current = 0;
-    setMessage(steps[0] || '');
+    setStepMessage(steps[0] || '');
 
     const tick = () => {
       if (phaseRef.current !== forPhase) return;
@@ -93,7 +117,7 @@ export default function useAudit(testId: string | null) {
       }
 
       stepIdx.current += 1;
-      setMessage(steps[stepIdx.current] || steps[steps.length - 1]);
+      setStepMessage(steps[stepIdx.current] || steps[steps.length - 1]);
       stepTimer.current = setTimeout(tick, ADVANCE_MS);
     };
 
@@ -102,18 +126,16 @@ export default function useAudit(testId: string | null) {
 
   function startAiStepRotation() {
     if (stepTimer.current) clearTimeout(stepTimer.current);
-
     stepIdx.current = 0;
-    setMessage(AI_STEPS[0] || '');
+    setStepMessage(AI_STEPS[0] || '');
 
     const tick = () => {
       if (stepIdx.current >= AI_STEPS.length - 1) {
         stepTimer.current = setTimeout(tick, ADVANCE_MS);
         return;
       }
-
       stepIdx.current += 1;
-      setMessage(AI_STEPS[stepIdx.current] || AI_STEPS[AI_STEPS.length - 1]);
+      setStepMessage(AI_STEPS[stepIdx.current] || AI_STEPS[AI_STEPS.length - 1]);
       stepTimer.current = setTimeout(tick, ADVANCE_MS);
     };
 
@@ -121,14 +143,13 @@ export default function useAudit(testId: string | null) {
   }
 
   useEffect(() => {
-    if (phase === 'queued') startStepRotation('queued');
-    else if (phase === 'running') startStepRotation('running');
+    if (phase === 'queued' || phase === 'running') startStepRotation(phase);
     else if (phase === 'finished') {
       clearTimers();
-      setMessage('Done');
+      setStepMessage('Done');
     } else if (phase === 'error') {
       clearTimers();
-      setMessage('The test failed');
+      setStepMessage('The test failed');
     }
   }, [phase]);
 
@@ -137,7 +158,8 @@ export default function useAudit(testId: string | null) {
     clearTimers();
     setMetrics(null);
     setError(null);
-    setMessage('');
+    setStepMessage('');
+    setServerStatus('');
     setPhase(null);
     phaseRef.current = null;
     lastPhaseIndex.current = 0;
@@ -145,6 +167,8 @@ export default function useAudit(testId: string | null) {
     setSiteUrl(undefined);
     setSiteTitle(undefined);
     setRunAt(undefined);
+    setSummaryUrl(undefined);
+    setJsonUrl(undefined);
 
     setAiSuggestions(null);
     setAiError(null);
@@ -153,9 +177,7 @@ export default function useAudit(testId: string | null) {
 
     if (!testId) return;
 
-    // Set test start time when we begin polling
     setTestStartTime(new Date());
-
     let cancelled = false;
 
     const poll = async (intervalMs: number, firstHit = false) => {
@@ -163,50 +185,24 @@ export default function useAudit(testId: string | null) {
       try {
         const res = await fetch(`/api/check-status?testId=${encodeURIComponent(testId)}`, { cache: 'no-store' });
         const json: StatusPayload = await res.json();
-        const serverPhase = (json.phase || 'queued') as Phase;
 
+        const serverPhase = (json.phase || 'queued') as Phase;
         if (json.siteUrl) setSiteUrl(json.siteUrl);
         if (json.siteTitle) setSiteTitle(json.siteTitle);
         if (json.runAt) setRunAt(json.runAt);
+        if (json.summaryUrl) setSummaryUrl(json.summaryUrl);
+        if (json.jsonUrl) setJsonUrl(json.jsonUrl);
+        if (json.statusText) setServerStatus(json.statusText);
 
         if (firstHit) {
           if (serverPhase === 'finished' && json.metrics) {
             setMonotonicPhase('finished');
-            
-            // Check if we need AI insights based on URL params
-            const urlParams = new URLSearchParams(window.location.search);
-            const needsAiInsights = urlParams.get('ai') === 'true';
-            
-            if (needsAiInsights) {
-              // Keep loading until AI insights are ready - don't set metrics yet
-              startAiStepRotation();
-              try {
-                setAiLoading(true);
-                const suggestions = await getAiInsights(json.metrics, json.siteUrl, json.siteTitle);
-                if (!cancelled) {
-                  setAiSuggestions(suggestions);
-                  setMetrics(json.metrics); // Set metrics only after AI is done
-                  setLoading(false);
-                  clearTimers();
-                  setMessage('Done');
-                }
-              } catch (e: unknown) {
-                if (!cancelled) {
-                  setAiError(e instanceof Error ? e.message : 'AI failed');
-                  setMetrics(json.metrics); // Set metrics even if AI fails
-                  setLoading(false);
-                  clearTimers();
-                  setMessage('Done');
-                }
-              } finally {
-                if (!cancelled) setAiLoading(false);
-              }
-            } else {
-              // No AI needed, set metrics and stop loading immediately
-              setMetrics(json.metrics);
-              setLoading(false);
-              setMessage('Done');
-            }
+            // metrics first
+            setMetrics(json.metrics);
+            setLoading(false);
+            saveRecent(testId, json.siteUrl, json.siteTitle, json.runAt);
+            // AI in parallel
+            await fetchAiIfNeeded(json.metrics, json.siteUrl, json.siteTitle);
             return;
           } else if (serverPhase === 'error') {
             setMonotonicPhase('error');
@@ -220,40 +216,10 @@ export default function useAudit(testId: string | null) {
         setMonotonicPhase(serverPhase);
 
         if (serverPhase === 'finished' && json.metrics) {
-          // Check if we need AI insights based on URL params
-          const urlParams = new URLSearchParams(window.location.search);
-          const needsAiInsights = urlParams.get('ai') === 'true';
-          
-          if (needsAiInsights) {
-            // Keep loading until AI insights are ready - don't set metrics yet
-            startAiStepRotation();
-            try {
-              setAiLoading(true);
-              const suggestions = await getAiInsights(json.metrics, json.siteUrl, json.siteTitle);
-              if (!cancelled) {
-                setAiSuggestions(suggestions);
-                setMetrics(json.metrics); // Set metrics only after AI is done
-                setLoading(false);
-                clearTimers();
-                setMessage('Done');
-              }
-            } catch (e: unknown) {
-              if (!cancelled) {
-                setAiError(e instanceof Error ? e.message : 'AI failed');
-                setMetrics(json.metrics); // Set metrics even if AI fails
-                setLoading(false);
-                clearTimers();
-                setMessage('Done');
-              }
-            } finally {
-              if (!cancelled) setAiLoading(false);
-            }
-          } else {
-            // No AI needed, set metrics and stop loading immediately
-            setMetrics(json.metrics);
-            setLoading(false);
-          }
-
+          setMetrics(json.metrics);
+          setLoading(false);
+          saveRecent(testId, json.siteUrl, json.siteTitle, json.runAt);
+          await fetchAiIfNeeded(json.metrics, json.siteUrl, json.siteTitle);
           return;
         }
         if (serverPhase === 'error') {
@@ -280,7 +246,28 @@ export default function useAudit(testId: string | null) {
     };
   }, [testId]);
 
-  const data = metrics && { metrics, siteUrl, siteTitle, runAt };
+  async function fetchAiIfNeeded(m: Metrics, url?: string, title?: string) {
+    const params = new URLSearchParams(window.location.search);
+    const needsAi = params.get('ai') === 'true';
+    if (!needsAi) return;
 
-  return { data, loading, phase, statusText: message, error, testStartTime, ai: { suggestions: aiSuggestions, loading: aiLoading, error: aiError } };
+    try {
+      setAiLoading(true);
+      startAiStepRotation(); // non-blocking progress while AI runs
+      const suggestions = await getAiInsights(m, url, title);
+      setAiSuggestions(suggestions);
+    } catch (e: unknown) {
+      setAiError(e instanceof Error ? e.message : 'AI failed');
+    } finally {
+      setAiLoading(false);
+      clearTimers();
+      setStepMessage('Done');
+    }
+  }
+
+  // Prefer rotating step message; fall back to server status.
+  const combinedStatus = stepMessage || serverStatus || '';
+
+  const data = metrics && { metrics, siteUrl, siteTitle, runAt, summaryUrl, jsonUrl };
+  return { data, loading, phase, statusText: combinedStatus, error, testStartTime, ai: { suggestions: aiSuggestions, loading: aiLoading, error: aiError } };
 }

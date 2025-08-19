@@ -183,7 +183,7 @@ export default function Recommendations({
       return (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-slate-100">Recommendations (AI model)</h2>
-          <div className="text-slate-400">Generating AI insights…</div>
+          <div className="text-slate-300">Generating AI insights…</div>
         </section>
       );
     }
@@ -192,7 +192,7 @@ export default function Recommendations({
       return (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-slate-100">Recommendations (AI model)</h2>
-          <div className="text-slate-400">No AI insights available.</div>
+          <div className="text-slate-300">No AI insights available.</div>
         </section>
       );
     }

@@ -180,7 +180,7 @@ export default function MetricModal({
             </div>
             <div className="min-w-0">
               <div className="text-3xl font-bold tracking-tight text-slate-100">{detail.rawValue}</div>
-              <div className="mt-1 text-sm text-slate-400">Target {detail.idealDisplay}</div>
+              <div className="mt-1 text-sm text-slate-300">Target {detail.idealDisplay}</div>
               <div className={`mt-2 text-sm font-medium ${textColor}`}>{Math.round(p * 100)}% of target</div>
               <span className={`mt-3 inline-flex items-center rounded-full px-2 py-1 text-xs ${detail.pass ? 'bg-emerald-950/50 text-emerald-300 ring-1 ring-inset ring-emerald-800' : 'bg-rose-950/50 text-rose-300 ring-1 ring-inset ring-rose-800'}`}>
                 {detail.pass ? 'Good' : 'Needs Improvement'}

@@ -1,19 +1,24 @@
 import { useState } from 'react';
 import { runTest } from '@lib/api';
 
+const LOCATIONS = [
+  { id: 'ec2-us-east-1:Chrome.Cable', label: 'Desktop · Cable (US-East)' },
+  { id: 'ec2-us-east-1:Chrome.4G', label: 'Mobile · 4G (US-East)' },
+];
+
 export default function AuditForm({ disabled, onStart }: { disabled?: boolean; onStart(testId: string, useAiInsights?: boolean): void; }) {
   const [url, setUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [useAiInsights, setUseAiInsights] = useState(false);
+  const [location, setLocation] = useState(LOCATIONS[0].id);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
-
     try {
       setSubmitting(true);
-      const { testId } = await runTest(url);
+      const { testId } = await runTest(url, location);
       onStart(testId, useAiInsights);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : 'Something went wrong starting the test');
@@ -24,11 +29,10 @@ export default function AuditForm({ disabled, onStart }: { disabled?: boolean; o
 
   return (
     <div className="space-y-8">
-      {/* AI Insights Toggle */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <span className="text-sm font-medium text-slate-200">Recommendation Source</span>
-          <div className="flex items-center space-x-2 text-xs text-slate-400">
+          <div className="flex items-center space-x-2 text-xs text-slate-300">
             <span className={useAiInsights ? 'opacity-50' : 'opacity-100'}>WebPageTest</span>
             <button
               type="button"
@@ -48,6 +52,19 @@ export default function AuditForm({ disabled, onStart }: { disabled?: boolean; o
             <span className={useAiInsights ? 'opacity-100' : 'opacity-50'}>AI-powered</span>
           </div>
         </div>
+
+        <div className="text-xs text-slate-300">
+          <label className="mr-2">Agent</label>
+          <select
+            className="rounded bg-slate-800/70 ring-1 ring-inset ring-slate-700 px-2 py-1"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            disabled={disabled || submitting}
+            aria-label="Test agent selection"
+          >
+            {LOCATIONS.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+          </select>
+        </div>
       </div>
 
       <form className="flex flex-col gap-3 sm:flex-row" onSubmit={handleSubmit}>
@@ -58,7 +75,7 @@ export default function AuditForm({ disabled, onStart }: { disabled?: boolean; o
           value={url}
           onChange={(ev) => setUrl(ev.target.value)}
           placeholder="https://example.com"
-          className="w-full rounded bg-slate-800/70 ring-1 ring-inset ring-slate-700 px-3 py-2 text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-sky-500"
+          className="w-full rounded bg-slate-800/70 ring-1 ring-inset ring-slate-700 px-3 py-2 text-slate-100 placeholder:text-slate-300 focus:outline-none focus:ring-sky-500"
         />
         <button
           type="submit"
