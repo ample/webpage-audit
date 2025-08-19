@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function AIRecommendations({ suggestions, loading, error }: { suggestions: string[] | null; loading: boolean; error: string | null; }) {
   if (error) {
     return <div className="rounded-xl border border-amber-700 bg-amber-950/40 p-4 text-amber-200">AI insights unavailable right now.</div>;

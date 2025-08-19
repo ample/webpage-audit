@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import type { MetricDetail } from '@components/MetricsCards';
 
 function clamp01(v: number) { return Math.max(0, Math.min(1, v)); }

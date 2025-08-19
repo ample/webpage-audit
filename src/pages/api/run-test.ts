@@ -1,4 +1,3 @@
-// pages/api/run-test.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const WPT_BASE = 'https://www.webpagetest.org';
