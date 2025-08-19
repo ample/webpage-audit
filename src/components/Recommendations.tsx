@@ -220,7 +220,7 @@ export default function Recommendations({
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-semibold text-slate-100">
-        Recommendations (WebPageTest rules — no AI)
+        Recommendations (WebPageTest rules)
       </h2>
       <ul className="space-y-2">
         {recommendations.map((rec, i) => (

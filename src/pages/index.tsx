@@ -20,10 +20,10 @@ export default function Home() {
         <SiteHeader />
 
         <main>
-          <section className="mx-auto max-w-3xl px-6 py-10 space-y-8">
-            <header className="text-center space-y-2">
-              <h1 className="text-3xl font-bold text-slate-100">Insights To Make Your Website Lightning Fast</h1>
-              <p className="text-slate-300">Run a WebPageTest-powered site audit and get actionable AI recommendations to make it load at lightning speed.</p>
+          <section className="mx-auto max-w-3xl px-6 pt-10 pb-32 space-y-8">
+            <header className="text-center space-y-4">
+              <h1 className="text-3xl font-bold text-slate-100">Insights To Make Your Website <span className="text-orange-200">Lightning Fast</span></h1>
+              <p className="text-slate-300 text-lg">Run a WebPageTest-powered site audit and get actionable AI recommendations to make it load at lightning speed.</p>
             </header>
 
             <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-md">
