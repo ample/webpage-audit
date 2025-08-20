@@ -2,6 +2,7 @@ import type { GetServerSideProps } from 'next';
 import { useEffect, useState, useRef } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+
 import useAudit from '@lib/hooks/useAudit';
 import LoadingSpinner from '@components/LoadingSpinner';
 import MetricsCards, { type MetricDetail } from '@components/MetricsCards';
@@ -10,6 +11,7 @@ import MetricModal from '@components/MetricModal';
 import TestTimer from '@components/TestTimer';
 import SiteHeader from '@components/SiteHeader';
 import { runTest } from '@lib/api';
+import A11yPanel from '@components/A11yPanel';
 
 type ResultsPageProps = { testId: string };
 
@@ -31,7 +33,7 @@ function formatRunDate(iso?: string) {
 
 export default function ResultsPage({ testId }: ResultsPageProps) {
   const router = useRouter();
-  const { data, loading, error, statusText, phase, testStartTime, ai } = useAudit(testId);
+  const { data, loading, error, statusText, phase, testStartTime, ai, a11y, isHistorical } = useAudit(testId);
 
   const [useAiInsights, setUseAiInsights] = useState(false);
   useEffect(() => {
@@ -54,7 +56,10 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
     }
   }, [data?.metrics, showResults]);
 
-  const loadingLabel = phase === 'finished' ? 'Loading results…' : (statusText || 'Running test…');
+  // Clearer messaging while opening old results
+  const loadingLabel = isHistorical
+    ? 'Loading saved results…'
+    : (phase === 'finished' ? 'Loading results…' : (statusText || 'Running test…'));
 
   async function handleRetry() {
     if (!data?.siteUrl) return;
@@ -82,60 +87,64 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
 
         <main>
           <section className="mx-auto max-w-4xl px-6 pt-12 pb-24 space-y-10">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
-              <header>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-100">
-                  Results{title ? ` · ${title}` : ''}
-                </h1>
-                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-300">
-                  <span className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1">
-                    Test ID: {testId}
-                  </span>
-                  {data?.siteUrl && (
-                    <a
-                      href={data.siteUrl}
-                      className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-sky-400 underline decoration-sky-600/60 underline-offset-4 hover:no-underline"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {formatHost(data.siteUrl)}
-                    </a>
-                  )}
-                  {runDate && (
-                    <span className="inline-flex items-center rounded-full bg-emerald-900/40 px-2.5 py-1 text-emerald-300">
-                      Run: {runDate}
+            {/* Hide header until metrics are ready to avoid an “empty results” frame during loading */}
+            {data?.metrics && (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
+                <header>
+                  <h1 className="text-3xl font-bold tracking-tight text-slate-100">
+                    Results{title ? ` · ${title}` : ''}
+                  </h1>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-300">
+                    <span className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1">
+                      Test ID: {testId}
                     </span>
-                  )}
-                  {wptSummaryUrl && (
-                    <a
-                      href={wptSummaryUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-amber-300 underline decoration-amber-600/60 underline-offset-4 hover:no-underline"
-                    >
-                      View full WebPageTest report
-                    </a>
-                  )}
-                  {wptJsonUrl && (
-                    <a
-                      href={wptJsonUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-slate-300 underline decoration-slate-600/60 underline-offset-4 hover:no-underline"
-                    >
-                      JSON
-                    </a>
-                  )}
-                </div>
-              </header>
-            </div>
+                    {data?.siteUrl && (
+                      <a
+                        href={data.siteUrl}
+                        className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-sky-400 underline decoration-sky-600/60 underline-offset-4 hover:no-underline"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {formatHost(data.siteUrl)}
+                      </a>
+                    )}
+                    {runDate && (
+                      <span className="inline-flex items-center rounded-full bg-emerald-900/40 px-2.5 py-1 text-emerald-300">
+                        Run: {runDate}
+                      </span>
+                    )}
+                    {wptSummaryUrl && (
+                      <a
+                        href={wptSummaryUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-amber-300 underline decoration-amber-600/60 underline-offset-4 hover:no-underline"
+                      >
+                        View full WebPageTest report
+                      </a>
+                    )}
+                    {wptJsonUrl && (
+                      <a
+                        href={wptJsonUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-slate-300 underline decoration-slate-600/60 underline-offset-4 hover:no-underline"
+                      >
+                        JSON
+                      </a>
+                    )}
+                  </div>
+                </header>
+              </div>
+            )}
 
             {loading && (
               <div className="space-y-3">
                 <div className="flex items-center">
                   <LoadingSpinner label={loadingLabel} />
                 </div>
-                <TestTimer startTime={testStartTime} />
+                {/* If you’d like to avoid confusion for historical loads, hide the timer: */}
+                {!isHistorical && <TestTimer startTime={testStartTime} />}
               </div>
             )}
 
@@ -173,6 +182,14 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
                     useAiInsights={useAiInsights}
                   />
                 </div>
+
+                {(a11y.loading || a11y.error || a11y.report) && (
+                  <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-md backdrop-blur">
+                    {a11y.loading && <div className="text-slate-300">Running accessibility checks…</div>}
+                    {a11y.error && <div className="text-rose-300">{a11y.error}</div>}
+                    {a11y.report && <A11yPanel report={a11y.report} />}
+                  </div>
+                )}
               </div>
             )}
           </section>

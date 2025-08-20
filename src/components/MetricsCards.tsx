@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import Tooltip from '@components/Tooltip';
 
 interface Metrics {
@@ -57,52 +58,74 @@ function badgeClasses(pass: boolean) {
     : 'bg-rose-950/50 text-rose-300 ring-1 ring-inset ring-rose-800';
 }
 
+function useAnimatePercent(target: number, ms = 700) {
+  const t = clamp01(target);
+  const [p, setP] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    let start = 0;
+    setP(0);
+    const step = (ts: number) => {
+      if (!start) start = ts;
+      const k = Math.min(1, (ts - start) / ms);
+      setP(t * k);
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [t, ms]);
+  return p;
+}
+
 function RingGauge({
   percent,
   size = 72,
   stroke = 8,
   label,
 }: { percent: number; size?: number; stroke?: number; label: string; }) {
-  const p = clamp01(percent);
+  const p = useAnimatePercent(percent, 700);
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
-  const dash = c * p;
-  const color = percentTextClass(p);
+  const dash = c * clamp01(p);
+  const color = percentTextClass(clamp01(percent));
 
   return (
-    <div className={`relative inline-block ${color}`} aria-label={`${label} gauge ${Math.round(p * 100)}%`}>
+    <div className={`relative inline-block ${color}`} aria-label={`${label} gauge ${Math.round(clamp01(p) * 100)}%`}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img">
         <circle cx={size/2} cy={size/2} r={r} stroke="currentColor" strokeWidth={stroke} opacity={0.2} fill="none" />
-        <circle
-          cx={size/2}
-          cy={size/2}
-          r={r}
-          stroke="currentColor"
-          strokeWidth={stroke}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${c - dash}`}
-          transform={`rotate(-90 ${size/2} ${size/2})`}
-        />
+        <g transform={`rotate(-90 ${size/2} ${size/2})`}>
+          <g transform={`translate(${size} 0) scale(-1 1)`}>
+            <circle
+              cx={size/2}
+              cy={size/2}
+              r={r}
+              stroke="currentColor"
+              strokeWidth={stroke}
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray={`${dash} ${c - dash}`}
+            />
+          </g>
+        </g>
       </svg>
-      <span className="absolute inset-0 grid place-items-center text-sm font-semibold text-slate-200">
-        {Math.round(p * 100)}%
+      <span className="absolute inset-0 grid place-items-center text-sm font-semibold text-slate-2 00">
+        {Math.round(clamp01(p) * 100)}%
       </span>
     </div>
   );
 }
 
 function BarGauge({ percent, label }: { percent: number; label: string; }) {
-  const p = clamp01(percent);
-  const bg = percentBgClass(p);
-  const pct = Math.round(p * 100);
+  const p = useAnimatePercent(percent, 600);
+  const bg = percentBgClass(clamp01(percent));
+  const pct = Math.round(clamp01(p) * 100);
 
   return (
     <div className="w-full" aria-label={`${label} gauge ${pct}%`}>
       <div className="h-3 w-full overflow-hidden rounded-full bg-slate-700">
         <div
-          className={`h-3 rounded-full ${bg} transition-all duration-500`}
-          style={{ width: `${pct}%` }}
+          className={`h-3 rounded-full ${bg}`}
+          style={{ width: `${pct}%`, transition: 'width 600ms ease-out' }}
         />
       </div>
       <div className="mt-1 text-xs text-slate-300">{pct}%</div>

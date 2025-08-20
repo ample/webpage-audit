@@ -1,4 +1,3 @@
-// lib/hooks/useAudit.ts
 import { useEffect, useRef, useState } from 'react';
 import type { Metrics } from '@/pages/api/check-status';
 import { getAiInsights } from '@lib/api';
@@ -30,54 +29,65 @@ const RUNNING_STEPS = [
   'Finalizing results…',
 ];
 
-const AI_STEPS = [
-  'Generating AI insights…',
-  'Analyzing performance data…',
-  'Crafting recommendations…',
-];
-
+const POST_STEPS_AI = 'Generating AI insights…';
+const POST_STEPS_A11Y = 'Running accessibility checks…';
 const ADVANCE_MS = 4000;
 
-type Recent = { testId: string; url?: string; title?: string; runAt?: string };
+const AI_LOCAL_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-function saveRecent(testId: string, url?: string, title?: string, runAt?: string) {
-  try {
-    const key = 'll:recent-tests';
-    const arr: Recent[] = JSON.parse(localStorage.getItem(key) || '[]');
-    const next = [{ testId, url, title, runAt }, ...arr.filter((r) => r.testId !== testId)].slice(0, 6);
-    localStorage.setItem(key, JSON.stringify(next));
-  } catch {}
+function clamp(n: number, lo: number, hi: number) {
+  return Math.max(lo, Math.min(hi, n));
 }
 
+function aiLocalKey(id: string) { return `ll:ai:${id}`; }
+
+type A11yReport = {
+  url: string;
+  summary: { violations: number; passes: number; incomplete: number; inapplicable: number };
+  violations: any[];
+  generatedAt: string;
+};
+
 export default function useAudit(testId: string | null) {
+  // core data
   const [metrics, setMetrics] = useState<Metrics | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  // progress state
-  const [phase, setPhase] = useState<Phase | null>(null);
-  const [stepMessage, setStepMessage] = useState<string>('');     // rotating local steps
-  const [serverStatus, setServerStatus] = useState<string>('');    // raw server status (generic)
-  const [error, setError] = useState<string | null>(null);
-
-  // metadata
   const [siteUrl, setSiteUrl] = useState<string | undefined>(undefined);
   const [siteTitle, setSiteTitle] = useState<string | undefined>(undefined);
   const [runAt, setRunAt] = useState<string | undefined>(undefined);
   const [summaryUrl, setSummaryUrl] = useState<string | undefined>(undefined);
   const [jsonUrl, setJsonUrl] = useState<string | undefined>(undefined);
-  const [testStartTime, setTestStartTime] = useState<Date | null>(null);
 
-  // AI
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
+  // overall loading & phase
+  const [loading, setLoading] = useState(false);
+  const [phase, setPhase] = useState<Phase | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // timers & refs
+  // status messages (server + rotating local stepper)
+  const [serverStatus, setServerStatus] = useState('');
+  const [stepMessage, setStepMessage] = useState('');
+
+  // timers/refs for step rotation
   const pollTimer = useRef<NodeJS.Timeout | null>(null);
   const stepTimer = useRef<NodeJS.Timeout | null>(null);
   const stepIdx = useRef(0);
   const lastPhaseIndex = useRef(0);
   const phaseRef = useRef<Phase | null>(null);
+
+  // test start (for the timer UI)
+  const [testStartTime, setTestStartTime] = useState<Date | null>(null);
+
+  // AI state
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
+
+  // Accessibility state
+  const [a11yLoading, setA11yLoading] = useState(false);
+  const [a11yError, setA11yError] = useState<string | null>(null);
+  const [a11yReport, setA11yReport] = useState<A11yReport | null>(null);
+
+  // Historical flag: true when opening a previously finished test
+  const [historical, setHistorical] = useState(false);
 
   function clearTimers() {
     if (pollTimer.current) clearTimeout(pollTimer.current);
@@ -106,7 +116,6 @@ export default function useAudit(testId: string | null) {
 
     const tick = () => {
       if (phaseRef.current !== forPhase) return;
-
       if (stepIdx.current >= steps.length - 1) {
         if (forPhase === 'queued') {
           setMonotonicPhase('running');
@@ -115,7 +124,6 @@ export default function useAudit(testId: string | null) {
         stepTimer.current = setTimeout(tick, ADVANCE_MS);
         return;
       }
-
       stepIdx.current += 1;
       setStepMessage(steps[stepIdx.current] || steps[steps.length - 1]);
       stepTimer.current = setTimeout(tick, ADVANCE_MS);
@@ -124,18 +132,19 @@ export default function useAudit(testId: string | null) {
     stepTimer.current = setTimeout(tick, ADVANCE_MS);
   }
 
-  function startAiStepRotation() {
+  function startPostStepsRotation(labels: string[]) {
     if (stepTimer.current) clearTimeout(stepTimer.current);
+    const steps = labels.length ? labels : ['Wrapping up…'];
     stepIdx.current = 0;
-    setStepMessage(AI_STEPS[0] || '');
+    setStepMessage(steps[0]);
 
     const tick = () => {
-      if (stepIdx.current >= AI_STEPS.length - 1) {
+      if (stepIdx.current >= steps.length - 1) {
         stepTimer.current = setTimeout(tick, ADVANCE_MS);
         return;
       }
       stepIdx.current += 1;
-      setStepMessage(AI_STEPS[stepIdx.current] || AI_STEPS[AI_STEPS.length - 1]);
+      setStepMessage(steps[stepIdx.current] || steps[steps.length - 1]);
       stepTimer.current = setTimeout(tick, ADVANCE_MS);
     };
 
@@ -153,13 +162,70 @@ export default function useAudit(testId: string | null) {
     }
   }, [phase]);
 
+  function saveRecent(testId: string, url?: string, title?: string, runAt?: string) {
+    try {
+      const key = 'll:recent-tests';
+      const arr: any[] = JSON.parse(localStorage.getItem(key) || '[]');
+      const next = [{ testId, url, title, runAt }, ...arr.filter((r) => r.testId !== testId)].slice(0, 6);
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch {}
+  }
+
+  // ---- AI fetch with client cache ----
+  async function fetchAiIfNeeded(id: string, m: Metrics, url?: string, title?: string) {
+    // localStorage check
+    try {
+      const cached = localStorage.getItem(aiLocalKey(id));
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed?.suggestions) && Date.now() - (parsed.at ?? 0) < AI_LOCAL_TTL_MS) {
+          setAiSuggestions(parsed.suggestions);
+          return;
+        }
+      }
+    } catch {}
+
+    try {
+      setAiLoading(true);
+      const suggestions = await getAiInsights(m, url, title, id);
+      setAiSuggestions(suggestions);
+      try {
+        localStorage.setItem(aiLocalKey(id), JSON.stringify({ suggestions, at: Date.now() }));
+      } catch {}
+    } catch (e: unknown) {
+      setAiError(e instanceof Error ? e.message : 'AI failed');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  // ---- A11y fetch (server caches; client just stores result) ----
+  async function fetchA11y(url: string) {
+    try {
+      setA11yLoading(true);
+      setA11yError(null);
+      const r = await fetch('/api/a11y-scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const json = await r.json();
+      if (!r.ok) throw new Error(json?.error || 'a11y scan failed');
+      setA11yReport(json.report as A11yReport);
+    } catch (e: unknown) {
+      setA11yError(e instanceof Error ? e.message : 'a11y scan failed');
+    } finally {
+      setA11yLoading(false);
+    }
+  }
+
   useEffect(() => {
-    // reset for new test
+    // reset for new or existing test load
     clearTimers();
     setMetrics(null);
     setError(null);
-    setStepMessage('');
     setServerStatus('');
+    setStepMessage('');
     setPhase(null);
     phaseRef.current = null;
     lastPhaseIndex.current = 0;
@@ -169,11 +235,14 @@ export default function useAudit(testId: string | null) {
     setRunAt(undefined);
     setSummaryUrl(undefined);
     setJsonUrl(undefined);
-
     setAiSuggestions(null);
     setAiError(null);
     setAiLoading(false);
+    setA11yReport(null);
+    setA11yError(null);
+    setA11yLoading(false);
     setTestStartTime(null);
+    setHistorical(false);
 
     if (!testId) return;
 
@@ -196,11 +265,31 @@ export default function useAudit(testId: string | null) {
 
         if (firstHit) {
           if (serverPhase === 'finished' && json.metrics) {
-            setMonotonicPhase('finished');
-            setMetrics(json.metrics);
-            setLoading(false);
+            // Historical (finished) test being opened
+            setHistorical(true);
+            const params = new URLSearchParams(window.location.search);
+            const needsAi = params.get('ai') === 'true';
+            const needsA11y = true;
+
+            const labels = [
+              'Loading saved results…',
+              needsA11y ? POST_STEPS_A11Y : null,
+              needsAi ? POST_STEPS_AI : null,
+            ].filter(Boolean) as string[];
+            startPostStepsRotation(labels);
+
+            setLoading(true);
+            const tasks: Promise<any>[] = [];
+            if (needsA11y && json.siteUrl) tasks.push(fetchA11y(json.siteUrl));
+            if (needsAi) tasks.push(fetchAiIfNeeded(testId, json.metrics, json.siteUrl, json.siteTitle));
+            await Promise.allSettled(tasks);
+            if (!cancelled) {
+              setMetrics(json.metrics);
+              setLoading(false);
+              clearTimers();
+              setStepMessage('Done');
+            }
             saveRecent(testId, json.siteUrl, json.siteTitle, json.runAt);
-            await fetchAiIfNeeded(testId, json.metrics, json.siteUrl, json.siteTitle);
             return;
           } else if (serverPhase === 'error') {
             setMonotonicPhase('error');
@@ -208,25 +297,47 @@ export default function useAudit(testId: string | null) {
             setLoading(false);
             return;
           }
+          // Fresh run kicking off
           setLoading(true);
         }
 
         setMonotonicPhase(serverPhase);
 
         if (serverPhase === 'finished' && json.metrics) {
-          setMetrics(json.metrics);
-          setLoading(false);
+          const params = new URLSearchParams(window.location.search);
+          const needsAi = params.get('ai') === 'true';
+          const needsA11y = true;
+
+          const labels = [
+            needsA11y ? POST_STEPS_A11Y : null,
+            needsAi ? POST_STEPS_AI : null,
+          ].filter(Boolean) as string[];
+          if (historical) labels.unshift('Loading saved results…');
+
+          startPostStepsRotation(labels);
+
+          setLoading(true);
+          const tasks: Promise<any>[] = [];
+          if (needsA11y && json.siteUrl) tasks.push(fetchA11y(json.siteUrl));
+          if (needsAi) tasks.push(fetchAiIfNeeded(testId, json.metrics, json.siteUrl, json.siteTitle));
+          await Promise.allSettled(tasks);
+          if (!cancelled) {
+            setMetrics(json.metrics);
+            setLoading(false);
+            clearTimers();
+            setStepMessage('Done');
+          }
           saveRecent(testId, json.siteUrl, json.siteTitle, json.runAt);
-          await fetchAiIfNeeded(testId, json.metrics, json.siteUrl, json.siteTitle);
           return;
         }
+
         if (serverPhase === 'error') {
           setError('Test failed');
           setLoading(false);
           return;
         }
 
-        const next = Math.min(intervalMs + 1000, 6000);
+        const next = clamp(intervalMs + 1000, 1000, 6000);
         pollTimer.current = setTimeout(() => poll(next), next);
       } catch (e: unknown) {
         if (!cancelled) {
@@ -244,50 +355,18 @@ export default function useAudit(testId: string | null) {
     };
   }, [testId]);
 
-  // AI CACHE: localStorage key helpers
-  function aiKey(id: string) {
-    return `ll:ai:${id}`;
-  }
-
-  async function fetchAiIfNeeded(id: string, m: Metrics, url?: string, title?: string) {
-    const params = new URLSearchParams(window.location.search);
-    const needsAi = params.get('ai') === 'true';
-    if (!needsAi) return;
-
-    // AI CACHE: client-side localStorage check
-    try {
-      const cached = localStorage.getItem(aiKey(id));
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed?.suggestions)) {
-          setAiSuggestions(parsed.suggestions);
-          return; // skip network entirely
-        }
-      }
-    } catch {}
-
-    try {
-      setAiLoading(true);
-      startAiStepRotation(); // non-blocking progress while AI runs
-      const suggestions = await getAiInsights(m, url, title, id);
-      setAiSuggestions(suggestions);
-
-      // AI CACHE: persist to localStorage
-      try {
-        localStorage.setItem(aiKey(id), JSON.stringify({ suggestions, at: Date.now() }));
-      } catch {}
-    } catch (e: unknown) {
-      setAiError(e instanceof Error ? e.message : 'AI failed');
-    } finally {
-      setAiLoading(false);
-      clearTimers();
-      setStepMessage('Done');
-    }
-  }
-
-  // Prefer rotating step message; fall back to server status.
   const combinedStatus = stepMessage || serverStatus || '';
 
   const data = metrics && { metrics, siteUrl, siteTitle, runAt, summaryUrl, jsonUrl };
-  return { data, loading, phase, statusText: combinedStatus, error, testStartTime, ai: { suggestions: aiSuggestions, loading: aiLoading, error: aiError } };
+  return {
+    data,
+    loading,
+    phase,
+    statusText: combinedStatus,
+    error,
+    testStartTime,
+    isHistorical: historical,
+    ai: { suggestions: aiSuggestions, loading: aiLoading, error: aiError },
+    a11y: { report: a11yReport, loading: a11yLoading, error: a11yError },
+  };
 }
