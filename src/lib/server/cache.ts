@@ -4,8 +4,8 @@
 
 type Entry<T> = { value: T; exp: number };
 
-const store = new Map<string, Entry<any>>();
-const inflight = new Map<string, Promise<any>>();
+const store = new Map<string, Entry<unknown>>();
+const inflight = new Map<string, Promise<unknown>>();
 
 function nowSec() {
   return Math.floor(Date.now() / 1000);

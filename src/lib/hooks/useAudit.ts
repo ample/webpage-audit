@@ -41,10 +41,20 @@ function clamp(n: number, lo: number, hi: number) {
 
 function aiLocalKey(id: string) { return `ll:ai:${id}`; }
 
+type NodeRef = { html?: string; target?: string[]; failureSummary?: string };
+type A11yViolation = {
+  id: string;
+  impact?: 'minor' | 'moderate' | 'serious' | 'critical';
+  help: string;
+  description?: string;
+  helpUrl?: string;
+  nodes?: NodeRef[];
+};
+
 type A11yReport = {
   url: string;
   summary: { violations: number; passes: number; incomplete: number; inapplicable: number };
-  violations: any[];
+  violations: A11yViolation[];
   generatedAt: string;
 };
 
@@ -162,10 +172,17 @@ export default function useAudit(testId: string | null) {
     }
   }, [phase]);
 
+  type RecentTest = {
+    testId: string;
+    url?: string;
+    title?: string;
+    runAt?: string;
+  };
+
   function saveRecent(testId: string, url?: string, title?: string, runAt?: string) {
     try {
       const key = 'll:recent-tests';
-      const arr: any[] = JSON.parse(localStorage.getItem(key) || '[]');
+      const arr: RecentTest[] = JSON.parse(localStorage.getItem(key) || '[]');
       const next = [{ testId, url, title, runAt }, ...arr.filter((r) => r.testId !== testId)].slice(0, 6);
       localStorage.setItem(key, JSON.stringify(next));
     } catch {}
@@ -279,7 +296,7 @@ export default function useAudit(testId: string | null) {
             startPostStepsRotation(labels);
 
             setLoading(true);
-            const tasks: Promise<any>[] = [];
+            const tasks: Promise<unknown>[] = [];
             if (needsA11y && json.siteUrl) tasks.push(fetchA11y(json.siteUrl));
             if (needsAi) tasks.push(fetchAiIfNeeded(testId, json.metrics, json.siteUrl, json.siteTitle));
             await Promise.allSettled(tasks);
@@ -317,7 +334,7 @@ export default function useAudit(testId: string | null) {
           startPostStepsRotation(labels);
 
           setLoading(true);
-          const tasks: Promise<any>[] = [];
+          const tasks: Promise<unknown>[] = [];
           if (needsA11y && json.siteUrl) tasks.push(fetchA11y(json.siteUrl));
           if (needsAi) tasks.push(fetchAiIfNeeded(testId, json.metrics, json.siteUrl, json.siteTitle));
           await Promise.allSettled(tasks);
@@ -353,7 +370,7 @@ export default function useAudit(testId: string | null) {
       cancelled = true;
       clearTimers();
     };
-  }, [testId]);
+    }, [testId]);
 
   const combinedStatus = stepMessage || serverStatus || '';
 

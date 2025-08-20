@@ -38,7 +38,7 @@ function sha1(input: string) {
   return crypto.createHash('sha1').update(input).digest('hex');
 }
 
-function normalizeResult(url: string, raw: any): A11yReport {
+function normalizeResult(url: string, raw: unknown): A11yReport {
   const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
   const summary = {
@@ -49,20 +49,26 @@ function normalizeResult(url: string, raw: any): A11yReport {
   };
 
   const violations: A11yViolation[] = Array.isArray(data?.violations)
-    ? data.violations.map((v: any) => ({
-        id: String(v?.id ?? ''),
-        impact: v?.impact,
-        help: String(v?.help ?? v?.description ?? 'Issue'),
-        description: v?.description ?? '',
-        helpUrl: v?.helpUrl ?? '',
-        nodes: Array.isArray(v?.nodes)
-          ? v.nodes.map((n: any) => ({
-              html: n?.html,
-              target: n?.target,
-              failureSummary: n?.failureSummary,
-            }))
-          : [],
-      }))
+    ? data.violations.map((v: unknown) => {
+        const violation = v as Record<string, unknown>;
+        return {
+          id: String(violation?.id ?? ''),
+          impact: violation?.impact as A11yViolation['impact'],
+          help: String(violation?.help ?? violation?.description ?? 'Issue'),
+          description: violation?.description as string ?? '',
+          helpUrl: violation?.helpUrl as string ?? '',
+          nodes: Array.isArray(violation?.nodes)
+            ? violation.nodes.map((n: unknown) => {
+                const node = n as Record<string, unknown>;
+                return {
+                  html: node?.html as string,
+                  target: node?.target as string[],
+                  failureSummary: node?.failureSummary as string,
+                };
+              })
+            : [],
+        };
+      })
     : [];
 
   return {
@@ -92,7 +98,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const transport = new StdioClientTransport({
           command: 'npx',
           args: ['-y', 'a11y-mcp-server'],
-          env: process.env,
+          env: process.env as Record<string, string>,
         });
 
         await client.connect(transport);
@@ -104,7 +110,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         await client.close();
 
-        let raw: any = null;
+        let raw: unknown = null;
         const c = Array.isArray(result?.content) ? result.content[0] : null;
         if (c && c.type === 'json') raw = c.json;
         else if (c && c.type === 'text') raw = c.text;
@@ -115,7 +121,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     );
 
     return res.status(200).json({ cached: false, report });
-  } catch (e: any) {
-    return res.status(500).json({ error: e?.message || 'a11y scan failed' });
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : 'a11y scan failed';
+    return res.status(500).json({ error: errorMessage });
   }
 }

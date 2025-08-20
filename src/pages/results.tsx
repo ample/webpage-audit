@@ -1,6 +1,7 @@
 import type { GetServerSideProps } from 'next';
 import { useEffect, useState, useRef } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 import useAudit from '@lib/hooks/useAudit';
@@ -152,7 +153,7 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
               <div className="rounded-xl border border-rose-800 bg-rose-950/40 p-4 text-rose-200 shadow-sm space-y-3">
                 <div>{error}</div>
                 <div className="flex gap-3">
-                  <a href="/" className="rounded bg-slate-800 px-3 py-1.5 text-slate-200 ring-1 ring-inset ring-slate-700 hover:bg-slate-700">Back</a>
+                  <Link href="/" className="rounded bg-slate-800 px-3 py-1.5 text-slate-200 ring-1 ring-inset ring-slate-700 hover:bg-slate-700">Back</Link>
                   {data?.siteUrl && (
                     <button
                       type="button"
