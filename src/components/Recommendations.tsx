@@ -171,7 +171,7 @@ export default function Recommendations({
     if (aiError) {
       return (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-100">Recommendations (AI model)</h2>
+          <h2 className="text-lg font-semibold text-slate-100">Performance Recommendations (AI model)</h2>
           <div className="rounded-xl border border-amber-700 bg-amber-950/40 p-4 text-amber-200">
             AI insights unavailable right now.
           </div>
@@ -182,7 +182,7 @@ export default function Recommendations({
     if (aiLoading) {
       return (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-100">Recommendations (AI model)</h2>
+          <h2 className="text-lg font-semibold text-slate-100">Performance Recommendations (AI model)</h2>
           <div className="text-slate-300">Generating AI insights…</div>
         </section>
       );
@@ -191,7 +191,7 @@ export default function Recommendations({
     if (!aiSuggestions || aiSuggestions.length === 0) {
       return (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-100">Recommendations (AI model)</h2>
+          <h2 className="text-lg font-semibold text-slate-100">Performance Recommendations (AI model)</h2>
           <div className="text-slate-300">No AI insights available.</div>
         </section>
       );
@@ -199,7 +199,7 @@ export default function Recommendations({
 
     return (
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-slate-100">Recommendations (AI model)</h2>
+        <h2 className="text-lg font-semibold text-slate-100">Performance Recommendations (AI model)</h2>
         <ul className="space-y-2">
           {aiSuggestions.map((suggestion, i) => (
             <li
@@ -220,7 +220,7 @@ export default function Recommendations({
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-semibold text-slate-100">
-        Recommendations (WebPageTest rules)
+        Performance Recommendations (WebPageTest rules)
       </h2>
       <ul className="space-y-2">
         {recommendations.map((rec, i) => (

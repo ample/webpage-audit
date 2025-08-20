@@ -96,9 +96,6 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
                     Results{title ? ` · ${title}` : ''}
                   </h1>
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-300">
-                    <span className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1">
-                      Test ID: {testId}
-                    </span>
                     {data?.siteUrl && (
                       <a
                         href={data.siteUrl}

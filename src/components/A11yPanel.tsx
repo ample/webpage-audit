@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 type NodeRef = { html?: string; target?: string[]; failureSummary?: string };
 type Violation = {
@@ -57,8 +57,6 @@ const IMPACT_STYLES: Record<
 const classesFor = (impact?: Violation['impact']) => IMPACT_STYLES[impact ?? 'minor'];
 
 export default function A11yPanel({ report }: { report: A11yReport }) {
-  const [open, setOpen] = useState(false);
-
   const top = useMemo(() => {
     const order = { critical: 4, serious: 3, moderate: 2, minor: 1 } as const;
     return [...(report.violations || [])]
@@ -71,7 +69,7 @@ export default function A11yPanel({ report }: { report: A11yReport }) {
       <div className="absolute inset-x-0 -top-1 h-px bg-gradient-to-r from-transparent via-slate-500/40 to-transparent" />
       <header className="flex items-start justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-slate-100">Accessibility (beta)</h2>
+          <h2 className="text-xl font-semibold text-slate-100">Accessibility Recommendations (beta)</h2>
           <p className="mt-1 text-sm text-slate-300">
             Axe-based scan of the tested URL. Focus fixes here to improve real user experience.
           </p>
@@ -101,55 +99,43 @@ export default function A11yPanel({ report }: { report: A11yReport }) {
       </div>
 
       <div className="mt-6">
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="cursor-pointer text-sm font-medium text-slate-300 underline decoration-dotted underline-offset-4 hover:text-slate-200"
-        >
-          {open ? 'Hide details' : 'Show top issues'}
-        </button>
-
-        {open && (
-          <ul className="mt-3 space-y-2">
-            {top.map((v) => {
-              const c = classesFor(v.impact);
-              return (
-                <li key={v.id} className={`rounded-lg border ${c.itemBorder} bg-slate-900/60 p-3`}>
-                  <div className="flex items-start justify-between">
-                    <p className="text-sm font-semibold text-slate-100">{v.help}</p>
-                    {v.impact && (
-                      <span
-                        className={`ml-3 inline-flex items-center rounded-full ${c.chipBg} px-2 py-0.5 text-xs ${c.chipText} ring-1 ring-inset ${c.chipRing}`}
-                      >
-                        {v.impact}
-                      </span>
-                    )}
-                  </div>
-                  {v.description && (
-                    <p className="mt-1 text-xs text-slate-300">{v.description}</p>
+        <ul className="mt-3 space-y-2">
+          {top.map((v) => {
+            const c = classesFor(v.impact);
+            return (
+              <li key={v.id} className={`rounded-lg border ${c.itemBorder} bg-slate-900/60 p-3`}>
+                <div className="flex items-start justify-between">
+                  <p className="text-sm font-semibold text-slate-100">{v.help}</p>
+                  {v.impact && (
+                    <span
+                      className={`ml-3 inline-flex items-center rounded-full ${c.chipBg} px-2 py-0.5 text-xs ${c.chipText} ring-1 ring-inset ${c.chipRing}`}
+                    >
+                      {v.impact}
+                    </span>
                   )}
-                  <div className="mt-2 text-xs text-slate-300">
-                    {(v.nodes?.[0]?.failureSummary || v.nodes?.[0]?.html) && (
-                      <code className="rounded bg-slate-800 px-1.5 py-0.5">
-                        {v.nodes?.[0]?.failureSummary || v.nodes?.[0]?.html}
-                      </code>
-                    )}
-                    {v.helpUrl && (
-                      <a
-                        className="ml-2 text-slate-300 underline decoration-dotted underline-offset-4 hover:text-slate-200"
-                        href={v.helpUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Learn more
-                      </a>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                </div>
+                {v.description && <p className="mt-1 text-xs text-slate-300">{v.description}</p>}
+                <div className="mt-2 text-xs text-slate-300">
+                  {(v.nodes?.[0]?.failureSummary || v.nodes?.[0]?.html) && (
+                    <code className="rounded bg-slate-800 px-1.5 py-0.5">
+                      {v.nodes?.[0]?.failureSummary || v.nodes?.[0]?.html}
+                    </code>
+                  )}
+                  {v.helpUrl && (
+                    <a
+                      className="ml-2 text-slate-300 underline decoration-dotted underline-offset-4 hover:text-slate-200"
+                      href={v.helpUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Learn more
+                    </a>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </section>
   );
