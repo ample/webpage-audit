@@ -204,7 +204,7 @@ export default function useAudit(testId: string | null) {
 
     try {
       setAiLoading(true);
-      const suggestions = await getAiInsights(m, url, title, id);
+      const suggestions = await getAiInsights(m, url, title);
       setAiSuggestions(suggestions);
       try {
         localStorage.setItem(aiLocalKey(id), JSON.stringify({ suggestions, at: Date.now() }));
