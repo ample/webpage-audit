@@ -45,7 +45,7 @@ CACHE_TTL_SECONDS=604800  # Optional: Cache TTL in seconds (default: 7 days)
 
 ## Tech Stack
 
-- **Next.js 14** - React framework with App Router
+- **Next.js 14** - React framework with Pages Router
 - **TypeScript** - Type-safe development
 - **Tailwind CSS** - Utility-first styling
 - **WebPageTest API** - Performance testing
