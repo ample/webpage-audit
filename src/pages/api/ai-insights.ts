@@ -1,3 +1,4 @@
+// pages/api/ai-insights.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 type Metrics = {
@@ -15,15 +16,49 @@ type Payload = { suggestions: string[] } | { error: string };
 
 const MODEL = process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20240620';
 
+// ---- Simple in-memory cache (server warm cache) ----
+type CacheEntry = { suggestions: string[]; at: number };
+const CACHE = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+
+function now() { return Date.now(); }
+function isFresh(entry?: CacheEntry | undefined) {
+  return !!entry && now() - entry.at < CACHE_TTL_MS;
+}
+function makeKey(body: any): string {
+  if (body?.testId && typeof body.testId === 'string') return `test:${body.testId}`;
+  // fallback: deterministic key from payload (no external hashing lib)
+  const summary = {
+    url: body?.siteUrl || '',
+    title: body?.siteTitle || '',
+    ttfbMs: body?.metrics?.ttfbMs ?? null,
+    fcpMs: body?.metrics?.fcpMs ?? null,
+    lcpMs: body?.metrics?.lcpMs ?? null,
+    speedIndexMs: body?.metrics?.speedIndexMs ?? null,
+    requests: body?.metrics?.requests ?? null,
+    transferredMB: body?.metrics ? Number((body.metrics.transferredBytes / 1024 / 1024).toFixed(2)) : null,
+    onLoadMs: body?.metrics?.onLoadMs ?? null,
+    fullyLoadedMs: body?.metrics?.fullyLoadedMs ?? null,
+  };
+  return `sig:${JSON.stringify(summary)}`;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Payload>) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
   if (!process.env.CLAUDE_API_KEY) return res.status(501).json({ error: 'AI not configured' });
 
   try {
-    const { metrics, siteUrl, siteTitle } = req.body as { metrics: Metrics; siteUrl?: string; siteTitle?: string };
-
+    const { metrics, siteUrl, siteTitle, testId } = req.body as {
+      metrics: Metrics; siteUrl?: string; siteTitle?: string; testId?: string;
+    };
     if (!metrics || typeof metrics !== 'object') {
       return res.status(400).json({ error: 'Missing metrics' });
+    }
+
+    const cacheKey = makeKey({ metrics, siteUrl, siteTitle, testId });
+    const cached = CACHE.get(cacheKey);
+    if (isFresh(cached)) {
+      return res.status(200).json({ suggestions: cached!.suggestions });
     }
 
     const summary = {
@@ -85,6 +120,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
     // de-dup and trim
     const dedup = Array.from(new Set(suggestions.map((s) => s.replace(/^-+\s*/, '').trim()))).slice(0, 6);
+
+    // SAVE to cache
+    CACHE.set(cacheKey, { suggestions: dedup, at: now() });
 
     return res.status(200).json({ suggestions: dedup });
   } catch (e: unknown) {

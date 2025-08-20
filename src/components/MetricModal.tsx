@@ -158,7 +158,7 @@ export default function MetricModal({
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-slate-950/80" onClick={onClose} />
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="relative w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <div className="relative w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-xl">
           <button
             onClick={onClose}
             aria-label="Close"

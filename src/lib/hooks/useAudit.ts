@@ -197,12 +197,10 @@ export default function useAudit(testId: string | null) {
         if (firstHit) {
           if (serverPhase === 'finished' && json.metrics) {
             setMonotonicPhase('finished');
-            // metrics first
             setMetrics(json.metrics);
             setLoading(false);
             saveRecent(testId, json.siteUrl, json.siteTitle, json.runAt);
-            // AI in parallel
-            await fetchAiIfNeeded(json.metrics, json.siteUrl, json.siteTitle);
+            await fetchAiIfNeeded(testId, json.metrics, json.siteUrl, json.siteTitle);
             return;
           } else if (serverPhase === 'error') {
             setMonotonicPhase('error');
@@ -219,7 +217,7 @@ export default function useAudit(testId: string | null) {
           setMetrics(json.metrics);
           setLoading(false);
           saveRecent(testId, json.siteUrl, json.siteTitle, json.runAt);
-          await fetchAiIfNeeded(json.metrics, json.siteUrl, json.siteTitle);
+          await fetchAiIfNeeded(testId, json.metrics, json.siteUrl, json.siteTitle);
           return;
         }
         if (serverPhase === 'error') {
@@ -246,16 +244,38 @@ export default function useAudit(testId: string | null) {
     };
   }, [testId]);
 
-  async function fetchAiIfNeeded(m: Metrics, url?: string, title?: string) {
+  // AI CACHE: localStorage key helpers
+  function aiKey(id: string) {
+    return `ll:ai:${id}`;
+  }
+
+  async function fetchAiIfNeeded(id: string, m: Metrics, url?: string, title?: string) {
     const params = new URLSearchParams(window.location.search);
     const needsAi = params.get('ai') === 'true';
     if (!needsAi) return;
 
+    // AI CACHE: client-side localStorage check
+    try {
+      const cached = localStorage.getItem(aiKey(id));
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed?.suggestions)) {
+          setAiSuggestions(parsed.suggestions);
+          return; // skip network entirely
+        }
+      }
+    } catch {}
+
     try {
       setAiLoading(true);
       startAiStepRotation(); // non-blocking progress while AI runs
-      const suggestions = await getAiInsights(m, url, title);
+      const suggestions = await getAiInsights(m, url, title, id);
       setAiSuggestions(suggestions);
+
+      // AI CACHE: persist to localStorage
+      try {
+        localStorage.setItem(aiKey(id), JSON.stringify({ suggestions, at: Date.now() }));
+      } catch {}
     } catch (e: unknown) {
       setAiError(e instanceof Error ? e.message : 'AI failed');
     } finally {
