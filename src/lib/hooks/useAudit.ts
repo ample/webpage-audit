@@ -56,7 +56,11 @@ type A11yReport = {
   generatedAt: string;
 };
 
-export default function useAudit(testId: string | null) {
+type Options = { useAi?: boolean };
+
+export default function useAudit(testId: string | null, options?: Options) {
+  const useAi = !!options?.useAi;
+
   // core data
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [siteUrl, setSiteUrl] = useState<string | undefined>(undefined);
@@ -101,7 +105,7 @@ export default function useAudit(testId: string | null) {
     historicalRef.current = historical;
   }, [historical]);
 
-  // --- Stable helpers (no re-creations) ---
+  // --- Stable helpers ---
 
   const clearTimers = useCallback(() => {
     if (pollTimer.current) clearTimeout(pollTimer.current);
@@ -209,7 +213,7 @@ export default function useAudit(testId: string | null) {
     }
   }, []);
 
-  // ---- A11y fetch (server caches; client just stores result) ----
+  // ---- A11y fetch ----
   const fetchA11y = useCallback(async (url: string) => {
     try {
       setA11yLoading(true);
@@ -229,7 +233,7 @@ export default function useAudit(testId: string | null) {
     }
   }, []);
 
-  // React to phase changes (rotate local step text, etc.)
+  // Phase-driven local step text
   useEffect(() => {
     if (phase === 'queued' || phase === 'running') {
       startStepRotation(phase);
@@ -242,7 +246,7 @@ export default function useAudit(testId: string | null) {
     }
   }, [phase, startStepRotation, clearTimers]);
 
-  // Main polling effect
+  // Main polling effect (uses explicit useAi)
   useEffect(() => {
     // reset for new or existing test load
     clearTimers();
@@ -287,9 +291,7 @@ export default function useAudit(testId: string | null) {
         if (json.jsonUrl) setJsonUrl(json.jsonUrl);
         if (json.statusText) setServerStatus(json.statusText);
 
-        // Default to AI unless explicitly disabled (?ai=false)
-        const params = new URLSearchParams(window.location.search);
-        const needsAi = params.get('ai') !== 'false';
+        const needsAi = useAi;
         const needsA11y = true;
 
         if (firstHit) {
@@ -377,12 +379,13 @@ export default function useAudit(testId: string | null) {
     };
   }, [
     testId,
+    useAi,                 
     clearTimers,
     startPostStepsRotation,
     fetchA11y,
     fetchAiIfNeeded,
     saveRecent,
-    setMonotonicPhase, // stable via useCallback
+    setMonotonicPhase,
   ]);
 
   const combinedStatus = stepMessage || serverStatus || '';

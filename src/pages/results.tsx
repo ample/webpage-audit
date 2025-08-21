@@ -31,15 +31,18 @@ function formatRunDate(iso?: string) {
 
 export default function ResultsPage({ testId }: ResultsPageProps) {
   const router = useRouter();
-  const { data, loading, error, statusText, phase, testStartTime, ai, a11y, isHistorical } = useAudit(testId);
 
   const [useAiInsights, setUseAiInsights] = useState(true);
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const val = urlParams.get('ai');
-    if (val === 'true') setUseAiInsights(true);
-    else if (val === 'false') setUseAiInsights(false);
-  }, []);
+    try {
+      const v = localStorage.getItem(`ll:ai:sel:${testId}`);
+      if (v === 'true') setUseAiInsights(true);
+      else if (v === 'false') setUseAiInsights(false);
+    } catch {}
+  }, [testId]);
+
+  const { data, loading, error, statusText, phase, testStartTime, ai, a11y, isHistorical } =
+    useAudit(testId, { useAi: useAiInsights });
 
   const title = data?.siteTitle || formatHost(data?.siteUrl);
   const runDate = formatRunDate(data?.runAt);
@@ -62,11 +65,11 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
   async function handleRetry() {
     if (!data?.siteUrl) return;
     try {
-      const params = new URLSearchParams();
-      if (useAiInsights) params.set('ai', 'true');
       const { testId: newId } = await runTest(data.siteUrl);
-      params.set('testId', newId);
-      router.push(`/results?${params.toString()}`);
+      try {
+        localStorage.setItem(`ll:ai:sel:${newId}`, useAiInsights ? 'true' : 'false');
+      } catch {}
+      router.push(`/results?testId=${encodeURIComponent(newId)}`);
     } catch {}
   }
 
@@ -194,15 +197,20 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
 
             {loading && (
               <div className="space-y-3">
-                <div className="flex items-center">
+                <div className="flex items-center gap-3">
                   <LoadingSpinner label={loadingLabel} />
+                  {useAiInsights && (
+                    <span className="inline-flex items-center rounded-full bg-amber-900/40 px-2.5 py-1 text-xs font-medium text-amber-200 ring-1 ring-inset ring-amber-700/60">
+                      AI recommendations enabled
+                    </span>
+                  )}
                 </div>
                 {!isHistorical && <TestTimer startTime={testStartTime} />}
               </div>
             )}
 
             {error && (
-              <div className="rounded-XL border border-rose-800 bg-rose-950/40 p-4 text-rose-200 shadow-sm space-y-3">
+              <div className="rounded-xl border border-rose-800 bg-rose-950/40 p-4 text-rose-200 shadow-sm space-y-3">
                 <div>{error}</div>
                 <div className="flex gap-3">
                   <Link href="/" className="rounded bg-slate-800 px-3 py-1.5 text-slate-200 ring-1 ring-inset ring-slate-700 hover:bg-slate-700">Back</Link>
