@@ -15,7 +15,6 @@
     "node_modules/.bin/a11y-mcp-server",
     "node_modules/a11y-mcp-server/**"
   ]
-  timeout = 26
 
 [build.environment]
   NODE_VERSION = "18"
