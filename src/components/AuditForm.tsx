@@ -16,7 +16,7 @@ export default function AuditForm({
   const [url, setUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [useAiInsights, setUseAiInsights] = useState(false);
+  const [useAiInsights, setUseAiInsights] = useState(true);
   const [location, setLocation] = useState(LOCATIONS[0].id);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -76,7 +76,7 @@ export default function AuditForm({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-xs text-slate-300">
+              <div className="flex items-center gap-2 text-xs text-slate-100">
                 <span className={!useAiInsights ? 'opacity-100' : 'opacity-60'}>WebPageTest</span>
                 <button
                   id="rec-toggle"
@@ -85,7 +85,9 @@ export default function AuditForm({
                   disabled={disabled || submitting}
                   aria-label={`Switch to ${useAiInsights ? 'WebPageTest' : 'AI-powered'} recommendations`}
                   className={`cursor-pointer relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 ${
-                    useAiInsights ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-slate-600'
+                    useAiInsights
+                      ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                      : 'bg-gradient-to-r from-indigo-600 to-purple-800'
                   }`}
                 >
                   <span

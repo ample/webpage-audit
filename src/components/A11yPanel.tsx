@@ -69,7 +69,7 @@ export default function A11yPanel({ report }: { report: A11yReport }) {
       <div className="absolute inset-x-0 -top-1 h-px bg-gradient-to-r from-transparent via-slate-500/40 to-transparent" />
       <header className="flex items-start justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-slate-100">Accessibility Recommendations (beta)</h2>
+          <h2 className="text-xl font-semibold text-slate-100">Accessibility Recommendations</h2>
           <p className="mt-1 text-sm text-slate-300">
             Axe-based scan of the tested URL. Focus fixes here to improve real user experience.
           </p>
