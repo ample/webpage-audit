@@ -11,6 +11,7 @@ Make your website lightning fast with comprehensive performance analysis, AI-pow
 - **Real-Time Progress**: Live timer and status updates during testing
 - **Comprehensive Metrics**: Detailed performance metrics and Core Web Vitals
 - **Smart Recommendations**: Choose between rule-based or AI-generated suggestions
+- **PDF Export**: Generate professional PDF reports with all performance and accessibility data
 
 ## Getting Started
 

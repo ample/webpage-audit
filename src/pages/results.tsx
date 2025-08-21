@@ -183,7 +183,7 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
                     <button
                       type="button"
                       onClick={exportPdf}
-                      className="cursor-pointer rounded bg-gradient-to-r from-yellow-600 to-orange-500 px-3 py-1.5 font-semibold text-white shadow hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:opacity-60"
+                      className="cursor-pointer rounded bg-slate-700 px-3 py-1.5 font-semibold text-white shadow hover:brightness-115 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:opacity-60"
                     >
                       Export PDF
                     </button>
