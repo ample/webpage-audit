@@ -23,10 +23,7 @@ function formatHost(u?: string) {
 function formatRunDate(iso?: string) {
   if (!iso) return '';
   try {
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(iso));
+    return new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
   } catch {
     return iso;
   }
@@ -36,10 +33,12 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
   const router = useRouter();
   const { data, loading, error, statusText, phase, testStartTime, ai, a11y, isHistorical } = useAudit(testId);
 
-  const [useAiInsights, setUseAiInsights] = useState(false);
+  const [useAiInsights, setUseAiInsights] = useState(true);
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    setUseAiInsights(urlParams.get('ai') === 'true');
+    const val = urlParams.get('ai');
+    if (val === 'true') setUseAiInsights(true);
+    else if (val === 'false') setUseAiInsights(false);
   }, []);
 
   const title = data?.siteTitle || formatHost(data?.siteUrl);
@@ -47,7 +46,6 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
 
   const [showResults, setShowResults] = useState(false);
   const resultsRef = useRef<HTMLDivElement | null>(null);
-
   const [selected, setSelected] = useState<MetricDetail | null>(null);
 
   useEffect(() => {
@@ -57,7 +55,6 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
     }
   }, [data?.metrics, showResults]);
 
-  // Clearer messaging while opening old results
   const loadingLabel = isHistorical
     ? 'Loading saved results…'
     : (phase === 'finished' ? 'Loading results…' : (statusText || 'Running test…'));
@@ -76,6 +73,54 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
   const wptSummaryUrl = data?.summaryUrl || (testId ? `https://www.webpagetest.org/result/${encodeURIComponent(testId)}/` : undefined);
   const wptJsonUrl = data?.jsonUrl || (testId ? `https://www.webpagetest.org/jsonResult.php?test=${encodeURIComponent(testId)}&f=json` : undefined);
 
+  async function exportPdf() {
+    if (!data?.metrics) return;
+
+    const payload = {
+      data: {
+        testId,
+        siteUrl: data.siteUrl,
+        siteTitle: data.siteTitle,
+        runAt: data.runAt,
+        summaryUrl: data.summaryUrl,
+        jsonUrl: data.jsonUrl,
+        metrics: data.metrics,
+        a11y: a11y.report ?? null,
+        aiSuggestions: useAiInsights ? (ai.suggestions ?? null) : null,
+        useAiInsights,
+      },
+    };
+
+    const fileBase = (() => {
+      const host = formatHost(data.siteUrl) || 'site';
+      const d = data.runAt ? new Date(data.runAt) : new Date();
+      const stamp = [
+        d.getFullYear(),
+        String(d.getMonth() + 1).padStart(2, '0'),
+        String(d.getDate()).padStart(2, '0'),
+      ].join('-');
+      return `lightning-load-${host}-${stamp}`;
+    })();
+
+    const r = await fetch('/api/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!r.ok) return;
+
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${fileBase}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <>
       <Head>
@@ -88,49 +133,60 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
 
         <main>
           <section className="mx-auto max-w-4xl px-6 pt-12 pb-24 space-y-10">
-            {/* Hide header until metrics are ready to avoid an “empty results” frame during loading */}
             {data?.metrics && (
               <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
-                <header>
-                  <h1 className="text-3xl font-bold tracking-tight text-slate-100">
-                    Results{title ? ` · ${title}` : ''}
-                  </h1>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-300">
-                    {data?.siteUrl && (
-                      <a
-                        href={data.siteUrl}
-                        className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-sky-400 underline decoration-sky-600/60 underline-offset-4 hover:no-underline"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {formatHost(data.siteUrl)}
-                      </a>
-                    )}
-                    {runDate && (
-                      <span className="inline-flex items-center rounded-full bg-emerald-900/40 px-2.5 py-1 text-emerald-300">
-                        Run: {runDate}
-                      </span>
-                    )}
-                    {wptSummaryUrl && (
-                      <a
-                        href={wptSummaryUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-amber-300 underline decoration-amber-600/60 underline-offset-4 hover:no-underline"
-                      >
-                        View full WebPageTest report
-                      </a>
-                    )}
-                    {wptJsonUrl && (
-                      <a
-                        href={wptJsonUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-slate-300 underline decoration-slate-600/60 underline-offset-4 hover:no-underline"
-                      >
-                        JSON
-                      </a>
-                    )}
+                <header className="flex items-start justify-between gap-4">
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-100">
+                      Results{title ? ` · ${title}` : ''}
+                    </h1>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-300">
+                      {data?.siteUrl && (
+                        <a
+                          href={data.siteUrl}
+                          className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-sky-400 underline decoration-sky-600/60 underline-offset-4 hover:no-underline"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {formatHost(data.siteUrl)}
+                        </a>
+                      )}
+                      {runDate && (
+                        <span className="inline-flex items-center rounded-full bg-emerald-900/40 px-2.5 py-1 text-emerald-300">
+                          Run: {runDate}
+                        </span>
+                      )}
+                      {wptSummaryUrl && (
+                        <a
+                          href={wptSummaryUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-amber-300 underline decoration-amber-600/60 underline-offset-4 hover:no-underline"
+                        >
+                          View full WebPageTest report
+                        </a>
+                      )}
+                      {wptJsonUrl && (
+                        <a
+                          href={wptJsonUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-slate-300 underline decoration-slate-600/60 underline-offset-4 hover:no-underline"
+                        >
+                          JSON
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="shrink-0">
+                    <button
+                      type="button"
+                      onClick={exportPdf}
+                      className="cursor-pointer rounded bg-gradient-to-r from-yellow-600 to-orange-500 px-3 py-1.5 font-semibold text-white shadow hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:opacity-60"
+                    >
+                      Export PDF
+                    </button>
                   </div>
                 </header>
               </div>
@@ -141,13 +197,12 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
                 <div className="flex items-center">
                   <LoadingSpinner label={loadingLabel} />
                 </div>
-                {/* If you’d like to avoid confusion for historical loads, hide the timer: */}
                 {!isHistorical && <TestTimer startTime={testStartTime} />}
               </div>
             )}
 
             {error && (
-              <div className="rounded-xl border border-rose-800 bg-rose-950/40 p-4 text-rose-200 shadow-sm space-y-3">
+              <div className="rounded-XL border border-rose-800 bg-rose-950/40 p-4 text-rose-200 shadow-sm space-y-3">
                 <div>{error}</div>
                 <div className="flex gap-3">
                   <Link href="/" className="rounded bg-slate-800 px-3 py-1.5 text-slate-200 ring-1 ring-inset ring-slate-700 hover:bg-slate-700">Back</Link>
@@ -155,7 +210,7 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
                     <button
                       type="button"
                       onClick={handleRetry}
-                      className="rounded bg-gradient-to-r from-yellow-600 to-orange-500 px-3 py-1.5 font-semibold text-white shadow hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+                      className="cursor-pointer rounded bg-gradient-to-r from-yellow-600 to-orange-500 px-3 py-1.5 font-semibold text-white shadow hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
                     >
                       Retry
                     </button>

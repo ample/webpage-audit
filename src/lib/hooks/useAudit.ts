@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Metrics } from '@/pages/api/check-status';
 import { getAiInsights } from '@lib/api';
 
@@ -16,11 +16,7 @@ type StatusPayload = {
   jsonUrl?: string;
 };
 
-const QUEUED_STEPS = [
-  'Waiting for a test agent…',
-  'Reserving an available browser…',
-];
-
+const QUEUED_STEPS = ['Waiting for a test agent…', 'Reserving an available browser…'];
 const RUNNING_STEPS = [
   'Launching a clean browser…',
   'Fetching the page…',
@@ -39,7 +35,9 @@ function clamp(n: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, n));
 }
 
-function aiLocalKey(id: string) { return `ll:ai:${id}`; }
+function aiLocalKey(id: string) {
+  return `ll:ai:${id}`;
+}
 
 type NodeRef = { html?: string; target?: string[]; failureSummary?: string };
 type A11yViolation = {
@@ -96,17 +94,23 @@ export default function useAudit(testId: string | null) {
   const [a11yError, setA11yError] = useState<string | null>(null);
   const [a11yReport, setA11yReport] = useState<A11yReport | null>(null);
 
-  // Historical flag: true when opening a previously finished test
+  // Historical flag and a ref mirror to avoid dependency churn
   const [historical, setHistorical] = useState(false);
+  const historicalRef = useRef(false);
+  useEffect(() => {
+    historicalRef.current = historical;
+  }, [historical]);
 
-  function clearTimers() {
+  // --- Stable helpers (no re-creations) ---
+
+  const clearTimers = useCallback(() => {
     if (pollTimer.current) clearTimeout(pollTimer.current);
     if (stepTimer.current) clearTimeout(stepTimer.current);
     pollTimer.current = null;
     stepTimer.current = null;
-  }
+  }, []);
 
-  function setMonotonicPhase(p: Phase) {
+  const setMonotonicPhase = useCallback((p: Phase) => {
     const order = { queued: 0, running: 1, finished: 2, error: 3 } as const;
     const next = order[p];
     if (next >= lastPhaseIndex.current) {
@@ -115,9 +119,9 @@ export default function useAudit(testId: string | null) {
       phaseRef.current = p;
       stepIdx.current = 0;
     }
-  }
+  }, []);
 
-  function startStepRotation(forPhase: Phase) {
+  const startStepRotation = useCallback((forPhase: Phase) => {
     if (stepTimer.current) clearTimeout(stepTimer.current);
     const steps = forPhase === 'queued' ? QUEUED_STEPS : RUNNING_STEPS;
 
@@ -140,9 +144,9 @@ export default function useAudit(testId: string | null) {
     };
 
     stepTimer.current = setTimeout(tick, ADVANCE_MS);
-  }
+  }, [setMonotonicPhase]);
 
-  function startPostStepsRotation(labels: string[]) {
+  const startPostStepsRotation = useCallback((labels: string[]) => {
     if (stepTimer.current) clearTimeout(stepTimer.current);
     const steps = labels.length ? labels : ['Wrapping up…'];
     stepIdx.current = 0;
@@ -159,18 +163,7 @@ export default function useAudit(testId: string | null) {
     };
 
     stepTimer.current = setTimeout(tick, ADVANCE_MS);
-  }
-
-  useEffect(() => {
-    if (phase === 'queued' || phase === 'running') startStepRotation(phase);
-    else if (phase === 'finished') {
-      clearTimers();
-      setStepMessage('Done');
-    } else if (phase === 'error') {
-      clearTimers();
-      setStepMessage('The test failed');
-    }
-  }, [phase]);
+  }, []);
 
   type RecentTest = {
     testId: string;
@@ -179,17 +172,17 @@ export default function useAudit(testId: string | null) {
     runAt?: string;
   };
 
-  function saveRecent(testId: string, url?: string, title?: string, runAt?: string) {
+  const saveRecent = useCallback((testId: string, url?: string, title?: string, runAt?: string) => {
     try {
       const key = 'll:recent-tests';
       const arr: RecentTest[] = JSON.parse(localStorage.getItem(key) || '[]');
       const next = [{ testId, url, title, runAt }, ...arr.filter((r) => r.testId !== testId)].slice(0, 6);
       localStorage.setItem(key, JSON.stringify(next));
     } catch {}
-  }
+  }, []);
 
   // ---- AI fetch with client cache ----
-  async function fetchAiIfNeeded(id: string, m: Metrics, url?: string, title?: string) {
+  const fetchAiIfNeeded = useCallback(async (id: string, m: Metrics, url?: string, title?: string) => {
     // localStorage check
     try {
       const cached = localStorage.getItem(aiLocalKey(id));
@@ -214,10 +207,10 @@ export default function useAudit(testId: string | null) {
     } finally {
       setAiLoading(false);
     }
-  }
+  }, []);
 
   // ---- A11y fetch (server caches; client just stores result) ----
-  async function fetchA11y(url: string) {
+  const fetchA11y = useCallback(async (url: string) => {
     try {
       setA11yLoading(true);
       setA11yError(null);
@@ -234,8 +227,22 @@ export default function useAudit(testId: string | null) {
     } finally {
       setA11yLoading(false);
     }
-  }
+  }, []);
 
+  // React to phase changes (rotate local step text, etc.)
+  useEffect(() => {
+    if (phase === 'queued' || phase === 'running') {
+      startStepRotation(phase);
+    } else if (phase === 'finished') {
+      clearTimers();
+      setStepMessage('Done');
+    } else if (phase === 'error') {
+      clearTimers();
+      setStepMessage('The test failed');
+    }
+  }, [phase, startStepRotation, clearTimers]);
+
+  // Main polling effect
   useEffect(() => {
     // reset for new or existing test load
     clearTimers();
@@ -280,13 +287,15 @@ export default function useAudit(testId: string | null) {
         if (json.jsonUrl) setJsonUrl(json.jsonUrl);
         if (json.statusText) setServerStatus(json.statusText);
 
+        // Default to AI unless explicitly disabled (?ai=false)
+        const params = new URLSearchParams(window.location.search);
+        const needsAi = params.get('ai') !== 'false';
+        const needsA11y = true;
+
         if (firstHit) {
           if (serverPhase === 'finished' && json.metrics) {
             // Historical (finished) test being opened
             setHistorical(true);
-            const params = new URLSearchParams(window.location.search);
-            const needsAi = params.get('ai') === 'true';
-            const needsA11y = true;
 
             const labels = [
               'Loading saved results…',
@@ -321,15 +330,11 @@ export default function useAudit(testId: string | null) {
         setMonotonicPhase(serverPhase);
 
         if (serverPhase === 'finished' && json.metrics) {
-          const params = new URLSearchParams(window.location.search);
-          const needsAi = params.get('ai') === 'true';
-          const needsA11y = true;
-
           const labels = [
             needsA11y ? POST_STEPS_A11Y : null,
             needsAi ? POST_STEPS_AI : null,
           ].filter(Boolean) as string[];
-          if (historical) labels.unshift('Loading saved results…');
+          if (historicalRef.current) labels.unshift('Loading saved results…');
 
           startPostStepsRotation(labels);
 
@@ -370,7 +375,15 @@ export default function useAudit(testId: string | null) {
       cancelled = true;
       clearTimers();
     };
-    }, [testId]);
+  }, [
+    testId,
+    clearTimers,
+    startPostStepsRotation,
+    fetchA11y,
+    fetchAiIfNeeded,
+    saveRecent,
+    setMonotonicPhase, // stable via useCallback
+  ]);
 
   const combinedStatus = stepMessage || serverStatus || '';
 
