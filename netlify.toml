@@ -1,7 +1,17 @@
 [build]
-  command = "pnpm run build"
+  command = "yarn run build"
   publish = ".next"
 
-# Ensures Next.js pages/API routes map to Netlify Functions
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = [
+    "a11y-mcp-server",
+    "@modelcontextprotocol/sdk"
+  ]
+  included_files = [
+    "node_modules/.bin/a11y-mcp-server",
+    "node_modules/a11y-mcp-server/**"
+  ]

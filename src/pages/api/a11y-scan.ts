@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import crypto from 'crypto';
+import path from 'path';
+import fs from 'fs';
 import { withCache } from '@lib/server/cache';
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -11,9 +13,11 @@ type A11yViolationNode = {
   failureSummary?: string;
 };
 
+type A11yImpact = 'minor' | 'moderate' | 'serious' | 'critical';
+
 type A11yViolation = {
   id: string;
-  impact?: 'minor' | 'moderate' | 'serious' | 'critical';
+  impact?: A11yImpact;
   help: string;
   description?: string;
   helpUrl?: string;
@@ -32,52 +36,111 @@ type A11yReport = {
   generatedAt: string;
 };
 
+export const config = { runtime: 'nodejs' };
+
 const CACHE_TTL_SECONDS = Number(process.env.CACHE_TTL_SECONDS ?? 60 * 60 * 24 * 7);
 
 function sha1(input: string) {
   return crypto.createHash('sha1').update(input).digest('hex');
 }
 
+/** --------- safe parsers for unknown --------- */
+function get(o: unknown, key: string): unknown {
+  return o && typeof o === 'object' ? (o as Record<string, unknown>)[key] : undefined;
+}
+function asNumber(v: unknown): number | undefined {
+  return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+}
+function asString(v: unknown): string | undefined {
+  return typeof v === 'string' ? v : undefined;
+}
+function asStringArray(v: unknown): string[] | undefined {
+  return Array.isArray(v) && v.every((x) => typeof x === 'string') ? (v as string[]) : undefined;
+}
+function asImpact(v: unknown): A11yImpact | undefined {
+  const s = asString(v);
+  if (s === 'minor' || s === 'moderate' || s === 'serious' || s === 'critical') return s;
+  return undefined;
+}
+
+/** Normalize various MCP/axe-like payload shapes into our A11yReport */
 function normalizeResult(url: string, raw: unknown): A11yReport {
   const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
-  const summary = {
-    violations: Number(data?.counts?.violations ?? data?.violations?.length ?? 0) || 0,
-    passes: Number(data?.counts?.passes ?? data?.passes?.length ?? 0) || 0,
-    incomplete: Number(data?.counts?.incomplete ?? data?.incomplete?.length ?? 0) || 0,
-    inapplicable: Number(data?.counts?.inapplicable ?? data?.inapplicable?.length ?? 0) || 0,
-  };
+  // counts can be under data.counts.*, or we can infer from arrays
+  const countsObj = get(data, 'counts');
 
-  const violations: A11yViolation[] = Array.isArray(data?.violations)
-    ? data.violations.map((v: unknown) => {
-        const violation = v as Record<string, unknown>;
-        return {
-          id: String(violation?.id ?? ''),
-          impact: violation?.impact as A11yViolation['impact'],
-          help: String(violation?.help ?? violation?.description ?? 'Issue'),
-          description: violation?.description as string ?? '',
-          helpUrl: violation?.helpUrl as string ?? '',
-          nodes: Array.isArray(violation?.nodes)
-            ? violation.nodes.map((n: unknown) => {
-                const node = n as Record<string, unknown>;
-                return {
-                  html: node?.html as string,
-                  target: node?.target as string[],
-                  failureSummary: node?.failureSummary as string,
-                };
-              })
-            : [],
-        };
+  const violationsCount =
+    asNumber(get(countsObj, 'violations')) ??
+    (Array.isArray(get(data, 'violations')) ? (get(data, 'violations') as unknown[]).length : 0);
+
+  const passesCount =
+    asNumber(get(countsObj, 'passes')) ??
+    (Array.isArray(get(data, 'passes')) ? (get(data, 'passes') as unknown[]).length : 0);
+
+  const incompleteCount =
+    asNumber(get(countsObj, 'incomplete')) ??
+    (Array.isArray(get(data, 'incomplete')) ? (get(data, 'incomplete') as unknown[]).length : 0);
+
+  const inapplicableCount =
+    asNumber(get(countsObj, 'inapplicable')) ??
+    (Array.isArray(get(data, 'inapplicable')) ? (get(data, 'inapplicable') as unknown[]).length : 0);
+
+  const violationsRaw = get(data, 'violations');
+  const violations: A11yViolation[] = Array.isArray(violationsRaw)
+    ? (violationsRaw as unknown[]).map((v): A11yViolation => {
+        const id = asString(get(v, 'id')) ?? '';
+        const impact = asImpact(get(v, 'impact'));
+        const help = asString(get(v, 'help')) ?? asString(get(v, 'description')) ?? 'Issue';
+        const description = asString(get(v, 'description')) ?? '';
+        const helpUrl = asString(get(v, 'helpUrl')) ?? '';
+
+        const nodesRaw = get(v, 'nodes');
+        const nodes: A11yViolationNode[] = Array.isArray(nodesRaw)
+          ? (nodesRaw as unknown[]).map((n): A11yViolationNode => {
+              const html = asString(get(n, 'html'));
+              const target = asStringArray(get(n, 'target'));
+              const failureSummary = asString(get(n, 'failureSummary'));
+              return { html, target, failureSummary };
+            })
+          : [];
+
+        return { id, impact, help, description, helpUrl, nodes };
       })
     : [];
 
   return {
     url,
-    summary,
+    summary: {
+      violations: violationsCount || 0,
+      passes: passesCount || 0,
+      incomplete: incompleteCount || 0,
+      inapplicable: inapplicableCount || 0,
+    },
     violations,
     generatedAt: new Date().toISOString(),
   };
 }
+
+/** Resolve the CLI path robustly for serverless */
+function resolveA11yMcpCommand(): { command: string; args: string[] } {
+  const override = process.env.A11Y_MCP_COMMAND?.trim();
+  if (override) return { command: override, args: [] };
+
+  const binName = process.platform === 'win32' ? 'a11y-mcp-server.cmd' : 'a11y-mcp-server';
+  const localBin = path.join(process.cwd(), 'node_modules', '.bin', binName);
+  if (fs.existsSync(localBin)) {
+    return { command: localBin, args: [] };
+    }
+  return { command: 'npx', args: ['-y', 'a11y-mcp-server'] };
+}
+
+type ToolContent =
+  | { type: 'json'; json: unknown }
+  | { type: 'text'; text: string }
+  | { type: string; [k: string]: unknown };
+
+type ToolResponse = { content?: ToolContent[] };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
@@ -90,39 +153,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const key = `a11y:${sha1(JSON.stringify({ url, tags: tags || [] }))}`;
 
   try {
-    const report = await withCache<A11yReport>(
-      key,
-      CACHE_TTL_SECONDS,
-      async () => {
-        const client = new Client({ name: 'll-audit-a11y', version: '1.0.0' });
-        const transport = new StdioClientTransport({
-          command: 'npx',
-          args: ['-y', 'a11y-mcp-server'],
-          env: process.env as Record<string, string>,
-        });
+    const report = await withCache<A11yReport>(key, CACHE_TTL_SECONDS, async () => {
+      const { command, args } = resolveA11yMcpCommand();
 
-        await client.connect(transport);
+      const client = new Client({ name: 'll-audit-a11y', version: '1.0.0' });
+      const transport = new StdioClientTransport({
+        command,
+        args,
+        env: {
+          ...process.env,
+          FORCE_COLOR: '0',
+          CI: '1',
+        } as Record<string, string>,
+      });
 
-        const result = await client.callTool({
-          name: 'test_accessibility',
-          arguments: { url, tags: Array.isArray(tags) ? tags : undefined },
-        });
+      await client.connect(transport);
 
-        await client.close();
+      const result = await client.callTool({
+        name: 'test_accessibility',
+        arguments: { url, tags: Array.isArray(tags) ? tags : undefined },
+      });
 
-        let raw: unknown = null;
-        const c = Array.isArray(result?.content) ? result.content[0] : null;
-        if (c && c.type === 'json') raw = c.json;
-        else if (c && c.type === 'text') raw = c.text;
-        else raw = result;
+      await client.close();
 
-        return normalizeResult(url, raw);
-      }
-    );
+      const tool = result as ToolResponse;
+      const first = Array.isArray(tool.content) ? tool.content[0] : undefined;
+
+      let raw: unknown = null;
+      if (first && first.type === 'json') raw = (first as Extract<ToolContent, { type: 'json' }>).json;
+      else if (first && first.type === 'text') raw = (first as Extract<ToolContent, { type: 'text' }>).text;
+      else raw = result;
+
+      return normalizeResult(url, raw);
+    });
 
     return res.status(200).json({ cached: false, report });
   } catch (e: unknown) {
-    const errorMessage = e instanceof Error ? e.message : 'a11y scan failed';
-    return res.status(500).json({ error: errorMessage });
+    const msg = e instanceof Error ? e.message : String(e);
+    const hint = msg.includes('Connection closed')
+      ? 'Accessibility engine failed to start on this environment.'
+      : undefined;
+    return res.status(500).json({ error: hint ? `${msg} (${hint})` : msg });
   }
 }
