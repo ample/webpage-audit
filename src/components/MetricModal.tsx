@@ -48,7 +48,8 @@ function RingGaugeLarge({ percent, label }: { percent: number; label: string }) 
     <div className={`relative inline-block ${color}`} aria-label={`${label} gauge ${Math.round(clamp01(p) * 100)}%`}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img">
         <circle cx={size/2} cy={size/2} r={r} stroke="currentColor" strokeWidth={stroke} opacity={0.2} fill="none" />
-        <g transform={`rotate(-90 ${size/2} ${size/2})`}>
+        {/* Start at 12 o’clock and move counterclockwise */}
+        <g transform={`rotate(90 ${size/2} ${size/2})`}>
           <g transform={`translate(${size} 0) scale(-1 1)`}>
             <circle
               cx={size/2}
