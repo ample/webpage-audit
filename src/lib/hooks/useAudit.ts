@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Metrics } from '@/pages/api/check-status';
-import { getAiInsights } from '@lib/api';
 import { getSessionId } from '@/lib/session';
 
 type Phase = 'queued' | 'running' | 'finished' | 'error';
@@ -26,18 +25,10 @@ const RUNNING_STEPS = [
   'Finalizing results…',
 ];
 
-const POST_STEPS_AI = 'Generating AI insights…';
-const POST_STEPS_A11Y = 'Running accessibility checks…';
 const ADVANCE_MS = 4000;
-
-const AI_LOCAL_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 function clamp(n: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, n));
-}
-
-function aiLocalKey(id: string) {
-  return `wa:ai:${id}`;
 }
 
 type NodeRef = { html?: string; target?: string[]; failureSummary?: string };
@@ -197,15 +188,15 @@ export default function useAudit(testId: string | null, options?: Options) {
     } catch {}
   }, []);
 
-  // ---- AI fetch with client cache ----
+  // ---- AI fetch with database cache ----
   const fetchAiIfNeeded = useCallback(async (id: string, m: Metrics, url?: string, title?: string) => {
-    // localStorage check
+    // Check database cache first
     try {
-      const cached = localStorage.getItem(aiLocalKey(id));
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed?.suggestions) && Date.now() - (parsed.at ?? 0) < AI_LOCAL_TTL_MS) {
-          setAiSuggestions(parsed.suggestions);
+      const response = await fetch(`/api/ai-insights?testId=${encodeURIComponent(id)}`);
+      if (response.ok) {
+        const cached = await response.json();
+        if (cached.suggestions && Array.isArray(cached.suggestions)) {
+          setAiSuggestions(cached.suggestions);
           return;
         }
       }
@@ -213,11 +204,24 @@ export default function useAudit(testId: string | null, options?: Options) {
 
     try {
       setAiLoading(true);
-      const suggestions = await getAiInsights(m, url, title);
-      setAiSuggestions(suggestions);
-      try {
-        localStorage.setItem(aiLocalKey(id), JSON.stringify({ suggestions, at: Date.now() }));
-      } catch {}
+      // Generate AI insights via API (which will cache them automatically)
+      const response = await fetch('/api/ai-insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          testId: id,
+          metrics: m,
+          siteUrl: url,
+          siteTitle: title
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setAiSuggestions(result.suggestions);
+      } else {
+        throw new Error('AI insights generation failed');
+      }
     } catch (e: unknown) {
       setAiError(e instanceof Error ? e.message : 'AI failed');
     } finally {
@@ -308,28 +312,21 @@ export default function useAudit(testId: string | null, options?: Options) {
 
         if (firstHit) {
           if (serverPhase === 'finished' && json.metrics) {
-            // Historical (finished) test being opened
+            // Historical (finished) test being opened - load results immediately
             setHistorical(true);
-
-            const labels = [
-              'Loading saved results…',
-              needsA11y ? POST_STEPS_A11Y : null,
-              needsAi ? POST_STEPS_AI : null,
-            ].filter(Boolean) as string[];
-            startPostStepsRotation(labels);
-
-            setLoading(true);
-            const tasks: Promise<unknown>[] = [];
-            if (needsA11y && json.siteUrl) tasks.push(fetchA11y(json.siteUrl));
-            if (needsAi) tasks.push(fetchAiIfNeeded(testId, json.metrics, json.siteUrl, json.siteTitle));
-            await Promise.allSettled(tasks);
-            if (!cancelled) {
-              setMetrics(json.metrics);
-              setLoading(false);
-              clearTimers();
-              setStepMessage('Done');
-            }
+            setMetrics(json.metrics);
+            setLoading(false);
+            clearTimers();
+            setStepMessage('Done');
             saveRecent(testId, json.siteUrl, json.siteTitle, json.runAt);
+
+            // Load AI insights and A11y in background (non-blocking)
+            if (needsA11y && json.siteUrl) {
+              fetchA11y(json.siteUrl).catch(() => {}); // Fire and forget
+            }
+            if (needsAi) {
+              fetchAiIfNeeded(testId, json.metrics, json.siteUrl, json.siteTitle).catch(() => {}); // Fire and forget
+            }
             return;
           } else if (serverPhase === 'error') {
             setMonotonicPhase('error');
@@ -344,26 +341,20 @@ export default function useAudit(testId: string | null, options?: Options) {
         setMonotonicPhase(serverPhase);
 
         if (serverPhase === 'finished' && json.metrics) {
-          const labels = [
-            needsA11y ? POST_STEPS_A11Y : null,
-            needsAi ? POST_STEPS_AI : null,
-          ].filter(Boolean) as string[];
-          if (historicalRef.current) labels.unshift('Loading saved results…');
-
-          startPostStepsRotation(labels);
-
-          setLoading(true);
-          const tasks: Promise<unknown>[] = [];
-          if (needsA11y && json.siteUrl) tasks.push(fetchA11y(json.siteUrl));
-          if (needsAi) tasks.push(fetchAiIfNeeded(testId, json.metrics, json.siteUrl, json.siteTitle));
-          await Promise.allSettled(tasks);
-          if (!cancelled) {
-            setMetrics(json.metrics);
-            setLoading(false);
-            clearTimers();
-            setStepMessage('Done');
-          }
+          // Show test results immediately
+          setMetrics(json.metrics);
+          setLoading(false);
+          clearTimers();
+          setStepMessage('Done');
           saveRecent(testId, json.siteUrl, json.siteTitle, json.runAt);
+
+          // Load AI insights and A11y in background (non-blocking)
+          if (needsA11y && json.siteUrl) {
+            fetchA11y(json.siteUrl).catch(() => {}); // Fire and forget
+          }
+          if (needsAi) {
+            fetchAiIfNeeded(testId, json.metrics, json.siteUrl, json.siteTitle).catch(() => {}); // Fire and forget
+          }
           return;
         }
 

@@ -24,7 +24,29 @@ function sha1(s: string) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Payload>) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+  if (!['GET', 'POST'].includes(req.method || '')) return res.status(405).json({ error: 'Method Not Allowed' });
+
+  // Handle GET requests for cache lookup
+  if (req.method === 'GET') {
+    const testId = req.query.testId;
+    if (!testId || typeof testId !== 'string') {
+      return res.status(400).json({ error: 'Missing testId' });
+    }
+
+    try {
+      const cached = await aiInsightsService.get(testId);
+      if (cached) {
+        return res.status(200).json({ suggestions: cached });
+      } else {
+        return res.status(404).json({ error: 'No cached insights found' });
+      }
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Database error';
+      return res.status(500).json({ error: message });
+    }
+  }
+
+  // Handle POST requests for generating new insights
   if (!process.env.CLAUDE_API_KEY) return res.status(501).json({ error: 'AI not configured' });
 
   try {
@@ -48,6 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       fullyLoadedMs: metrics.fullyLoadedMs ?? null,
     };
 
+    // Use testId when available, otherwise fall back to content hash
     const cacheKey = testId || `ai:sig:${sha1(JSON.stringify(summary))}`;
 
     // Check for cached AI insights
