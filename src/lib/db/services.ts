@@ -103,8 +103,8 @@ export const aiInsightsService = {
       .onConflictDoUpdate({
         target: aiInsights.id,
         set: {
-          suggestions: sql.raw('excluded.suggestions'),
-          expiresAt: sql.raw('excluded.expires_at'),
+          suggestions: sql`excluded.suggestions`,
+          expiresAt: sql`excluded.expires_at`,
         },
       })
       .returning();
@@ -150,8 +150,8 @@ export const a11yReportsService = {
       .onConflictDoUpdate({
         target: a11yReports.id,
         set: {
-          report: sql.raw('excluded.report'),
-          expiresAt: sql.raw('excluded.expires_at'),
+          report: sql`excluded.report`,
+          expiresAt: sql`excluded.expires_at`,
         },
       })
       .returning();
