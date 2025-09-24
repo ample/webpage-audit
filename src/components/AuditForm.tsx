@@ -45,12 +45,12 @@ export default function AuditForm({
           value={url}
           onChange={(ev) => setUrl(ev.target.value)}
           placeholder="https://example.com"
-          className="w-full rounded bg-slate-800/70 ring-1 ring-inset ring-slate-600 px-3 py-2 text-slate-100 placeholder:text-slate-300 focus:outline-none focus:ring-sky-500"
+          className="w-full rounded bg-ample-slate px-3 py-2 text-slate-100 placeholder:text-slate-300 focus:outline-none focus:ring-sky-500"
         />
         <button
           type="submit"
           disabled={disabled || submitting}
-          className="rounded bg-gradient-to-r from-yellow-600 to-orange-500 px-5 py-2 font-semibold text-white text-shadow-lg hover:brightness-105 active:brightness-100 disabled:opacity-60 transition cursor-pointer text-nowrap shadow-lg hover:shadow-yellow-600/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+          className="rounded bg-gradient-to-r bg-ample-blue hover:bg-ample-blue/80 px-5 py-2 font-semibold text-white text-shadow-lg hover:brightness-105 active:brightness-100 disabled:opacity-60 transition cursor-pointer text-nowrap"
         >
           {submitting ? 'Starting…' : 'Run Audit'}
         </button>
@@ -59,7 +59,7 @@ export default function AuditForm({
 
       {/* Settings */}
       <div className="space-y-8">
-        <fieldset className="rounded-xl border border-slate-800 bg-slate-800/60 p-4">
+        <fieldset className="rounded-xl p-4">
           <legend className="px-1 text-md font-semibold text-slate-200">Recommendation Source</legend>
           <div>
             <p className="text-sm text-slate-400">
@@ -103,7 +103,7 @@ export default function AuditForm({
         </fieldset>
 
         {/* Agent */}
-        <fieldset className="rounded-xl border border-slate-800 bg-slate-800/60 p-4">
+        <fieldset className="rounded-xl  p-4">
           <legend className="px-1 text-md font-semibold text-slate-200">Test Agent</legend>
           <div>
             <p className="text-sm text-slate-400">
@@ -116,7 +116,7 @@ export default function AuditForm({
               </label>
               <select
                 id="agent-select"
-                className="rounded bg-slate-800/70 ring-1 ring-inset ring-slate-700 px-2 py-2 text-sm text-slate-100 cursor-pointer"
+                className="rounded bg-ample-slate px-2 py-2 text-sm text-slate-100 cursor-pointer"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 disabled={disabled || submitting}

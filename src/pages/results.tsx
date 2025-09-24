@@ -155,13 +155,13 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
         <meta name="description" content="WebPageTest performance results with actionable insights to make your website load faster" />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
+      <div className="min-h-screen bg-ample-slate">
         <SiteHeader />
 
         <main>
           <section className="mx-auto max-w-4xl px-6 pt-12 pb-24 space-y-10">
             {data?.metrics && (
-              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
+              <div className="rounded-2xl bg-ample-gray p-6 shadow-lg">
                 <header className="flex items-start justify-between gap-4">
                   <div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-100">
@@ -210,7 +210,7 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
                     <button
                       type="button"
                       onClick={exportPdf}
-                      className="cursor-pointer rounded bg-slate-700 px-3 py-1.5 font-semibold text-white shadow hover:brightness-115 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:opacity-60"
+                      className="cursor-pointer rounded bg-ample-blue hover:bg-ample-blue/80 px-3 py-1.5 font-semibold text-white shadow  disabled:opacity-60"
                     >
                       Export PDF
                     </button>
@@ -258,7 +258,7 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
               >
                 <MetricsCards metrics={data.metrics} onSelect={(d) => setSelected(d)} />
 
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-md backdrop-blur">
+                <div className="rounded-2xl bg-ample-gray p-6 shadow-md backdrop-blur">
                   <Recommendations
                     metrics={data.metrics}
                     aiSuggestions={ai.suggestions}
@@ -269,7 +269,7 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
                 </div>
 
                 {(a11y.loading || a11y.error || a11y.report) && (
-                  <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-md backdrop-blur">
+                  <div className="rounded-2xl bg-ample-gray p-6 shadow-md backdrop-blur">
                     {a11y.loading && <div className="text-slate-300">Running accessibility checks…</div>}
                     {a11y.error && <div className="text-rose-300">{a11y.error}</div>}
                     {a11y.report && <A11yPanel report={a11y.report} />}

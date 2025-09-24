@@ -229,7 +229,7 @@ export default function MetricsCards({ metrics, onSelect }: Props) {
               type="button"
               onClick={() => onSelect?.(it)}
               onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && onSelect) onSelect(it); }}
-              className="group relative w-full cursor-pointer text-left rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-sm transition hover:border-slate-700 hover:bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-slate-500"
+              className="group relative w-full cursor-pointer text-left rounded-2xl bg-ample-gray hover:bg-ample-gray/50 p-5 shadow-sm transition"
             >
               <div className="flex items-start justify-between">
                 <Tooltip label={DESCRIPTIONS[it.label] || ''}>
@@ -259,11 +259,11 @@ export default function MetricsCards({ metrics, onSelect }: Props) {
 
       <p className="text-sm text-slate-300">
         Reference:&nbsp;
-        <span className="inline-flex items-center rounded-full bg-slate-800 px-2 py-0.5 text-slate-300">
+        <span className="inline-flex items-center rounded-full bg-ample-gray px-2 py-0.5 text-slate-300">
           onLoad {(metrics.onLoadMs / 1000).toFixed(2)}s
         </span>
         <span className="mx-2 text-slate-600">•</span>
-        <span className="inline-flex items-center rounded-full bg-slate-800 px-2 py-0.5 text-slate-300">
+        <span className="inline-flex items-center rounded-full bg-ample-gray px-2 py-0.5 text-slate-300">
           Fully Loaded {(metrics.fullyLoadedMs / 1000).toFixed(2)}s
         </span>
       </p>

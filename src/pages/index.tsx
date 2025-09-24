@@ -21,7 +21,7 @@ export default function Home() {
         />
       </Head>
 
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
+      <div className="min-h-screen bg-ample-slate">
         <SiteHeader />
 
         <main>
@@ -35,7 +35,7 @@ export default function Home() {
               </p>
             </header>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-md">
+            <div className="rounded-2xl bg-ample-gray p-6 shadow-md">
               <AuditForm
                 disabled={busy}
                 onStart={async (id, useAiInsights) => {

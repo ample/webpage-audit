@@ -2,9 +2,9 @@ import Link from 'next/link';
 
 export default function SiteHeader() {
   return (
-    <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur">
+    <header className="bg-ample-gray backdrop-blur">
       <div className="mx-auto max-w-8xl px-6 py-4">
-        <Link href="/" className="inline-flex items-center space-x-2 text-xl font-bold text-slate-100 hover:text-yellow-400 transition-colors">
+        <Link href="/" className="inline-flex items-center space-x-2 text-xl font-bold text-slate-100 hover:text-ample-light-blue transition-colors">
           <div className="flex h-8 w-8 items-center justify-center">
             <svg viewBox="0 0 1440 1440" version="1.1" xmlns="http://www.w3.org/2000/svg">
               <g id="ample-logo-a-white" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" className="fill-current">

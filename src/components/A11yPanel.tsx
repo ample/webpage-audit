@@ -65,8 +65,8 @@ export default function A11yPanel({ report }: { report: A11yReport }) {
   }, [report]);
 
   return (
-    <section className="relative rounded-2xl border border-slate-700 bg-slate-900/70 p-6 shadow-sm">
-      <div className="absolute inset-x-0 -top-1 h-px bg-gradient-to-r from-transparent via-slate-500/40 to-transparent" />
+    <section className="relative rounded-2xl">
+      <div className="absolute inset-x-0 -top-1 h-px" />
       <header className="flex items-start justify-between">
         <div>
           <h2 className="text-xl font-semibold text-slate-100">Accessibility Recommendations</h2>

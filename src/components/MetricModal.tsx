@@ -77,7 +77,7 @@ function BarGaugeLarge({ percent, label }: { percent: number; label: string }) {
   const pct = Math.round(clamp01(p) * 100);
   return (
     <div className="w-full" aria-label={`${label} gauge ${pct}%`}>
-      <div className="h-4 w-full overflow-hidden rounded-full bg-slate-700">
+      <div className="h-4 w-full overflow-hidden rounded-full bg-ample-slate">
         <div className={`h-4 rounded-full ${bg}`} style={{ width: `${pct}%`, transition: 'width 650ms ease-out' }} />
       </div>
       <div className="mt-2 text-sm text-slate-300">{pct}%</div>
@@ -179,9 +179,9 @@ export default function MetricModal({
 
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-slate-950/80" onClick={onClose} />
+      <div className="absolute inset-0 bg-ample-black/60" onClick={onClose} />
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="relative w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-xl">
+        <div className="relative w-full max-w-lg rounded-2xl bg-ample-slate p-8 shadow-xl">
           <button
             onClick={onClose}
             aria-label="Close"

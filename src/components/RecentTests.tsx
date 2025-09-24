@@ -36,7 +36,7 @@ export default function RecentTests() {
   if (!items.length) return null;
 
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-md">
+    <section className="rounded-2xl bg-ample-gray p-6">
       <h2 className="text-lg font-semibold text-slate-100 mb-3">Recent tests</h2>
       <ul className="space-y-2">
         {items.map((it) => {
@@ -52,7 +52,7 @@ export default function RecentTests() {
                 {when && <span className="text-xs text-slate-300">{when}</span>}
                 <Link
                   href={`/results?testId=${encodeURIComponent(it.testId)}`}
-                  className="rounded bg-slate-800 px-2 py-1 text-sm text-slate-200 ring-1 ring-inset ring-slate-700 hover:bg-slate-700"
+                  className="rounded bg-ample-blue hover:bg-ample-blue/80 px-2 py-1 text-sm text-white "
                 >
                   Open
                 </Link>

@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+@theme {
+  /* Ample brand colors - single source of truth */
+  --color-ample-slate: #1C222B;
+  --color-ample-gray: #303947;
+  --color-ample-dark-gray: #151f24;
+  --color-ample-orange: #FF7139;
+  --color-ample-black: #000000;
+  --color-ample-white: #ffffff;
+  --color-ample-blue: #0495DF;
+  --color-ample-light-blue: #00A3FF;
+
+  /* Ample typography */
+  --font-mono: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
 html, body, #__next {
   height: 100%;
 }
