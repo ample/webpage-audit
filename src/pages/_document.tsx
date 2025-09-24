@@ -27,7 +27,7 @@ export default function Document() {
 
         {/* Additional Meta Tags */}
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="robots" content="index, follow" />
+        <meta name="robots" content="noindex, nofollow" />
         <meta name="author" content="Ample" />
         <meta name="theme-color" content="#0F172A" />
         <link rel="canonical" href="https://audit.ample.co/" />
