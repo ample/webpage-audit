@@ -18,15 +18,23 @@ Lightning Load is a Next.js application that provides comprehensive web performa
 ## 🚨 PROJECT QUALITY STANDARDS
 
 **Build must succeed and code must be clean!**
-This is a TypeScript/Next.js project. Always run `npm run build` after changes.
+This is a TypeScript/Next.js project. Always run `ntl build` after changes.
 Fix any TypeScript compilation errors before continuing.
 
-**Commands:**
-- `npm run build` - Build for production (TypeScript compilation check)
-- `npm run dev` - Development server with Turbo
-- `npm run lint` - ESLint checking
-- `npm run test` - Jest tests
-- `npm run test:watch` - Jest in watch mode
+**IMPORTANT**: Always use Netlify CLI (`ntl`) to execute scripts for proper environment variable injection at build/runtime.
+
+**Commands (via Netlify CLI for ENV injection):**
+- `ntl build` - Build for production (TypeScript compilation check)
+- `ntl dev` - Development server with Turbo and environment variables
+- `ntl dev:exec -- npm run lint` - ESLint checking
+- `ntl dev:exec -- npm run test` - Jest tests
+- `ntl dev:exec -- npm run test:watch` - Jest in watch mode
+
+**Database Commands:**
+- `ntl dev:exec -- npm run db:generate` - Generate new migration files
+- `ntl dev:exec -- npm run db:push` - Push schema directly to database (development)
+- `ntl dev:exec -- npm run db:migrate` - Apply migrations to database (production)
+- `ntl dev:exec -- npm run db:studio` - Launch Drizzle Studio for database management
 
 ## CRITICAL WORKFLOW - ALWAYS FOLLOW THIS!
 
@@ -68,7 +76,7 @@ Say: "I'll spawn agents to tackle different aspects of this problem" whenever a 
 
 **When making changes:**
 
-1. **BUILD FIRST** - Always run `npm run build` to verify TypeScript compilation
+1. **BUILD FIRST** - Always run `ntl build` to verify TypeScript compilation
 2. **FIX COMPILATION ERRORS** - Address any TypeScript errors immediately
 3. **TEST FUNCTIONALITY** - Verify changes work as expected
 4. **CONTINUE TASK** - Proceed with implementation once code compiles
@@ -104,14 +112,14 @@ Focus on:
 
 ### Our code is complete when:
 
-- ✅ TypeScript compiles without errors (`npm run build`)
+- ✅ TypeScript compiles without errors (`ntl build`)
 - ✅ Feature works end-to-end
 - ✅ Code is clean and readable
 - ✅ Unused code is removed
 
 ### Testing Strategy
 
-- **Jest Framework**: Run tests with `npm test` or `npm run test:watch`
+- **Jest Framework**: Run tests with `ntl dev:exec -- npm run test` or `ntl dev:exec -- npm run test:watch`
 - **Test Structure**: Tests in `__tests__/` directory with `.test.ts/.tsx` extensions
 - **Manual Testing**: Test MCP integration and WebPageTest API manually
 - **Focus**: Integration testing (does the tool work end-to-end?)
@@ -127,14 +135,6 @@ CLAUDE_MODEL=claude-3-5-sonnet-20240620           # AI model to use
 CACHE_TTL_SECONDS=604800                          # Optional: Cache TTL (default: 7 days)
 ```
 
-### Database Commands
-
-```bash
-npm run db:generate  # Generate new migration files
-npm run db:push      # Push schema directly to database (development)
-npm run db:migrate   # Apply migrations to database (production)
-npm run db:studio    # Launch Drizzle Studio for database management
-```
 
 ## Problem-Solving Together
 

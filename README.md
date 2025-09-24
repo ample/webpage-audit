@@ -15,15 +15,25 @@ Make your website lightning fast with comprehensive performance analysis, AI-pow
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+Install the Netlify CLI globally if you haven't already:
 
 ```bash
-npm run dev
-# or
-yarn dev
+npm install -g netlify-cli
+```
+
+### Development Server
+
+Run the development server using Netlify CLI for proper environment variable injection:
+
+```bash
+ntl dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+**Important**: Always use Netlify CLI (`ntl`) commands to ensure environment variables are properly injected at build/runtime from your Netlify site configuration.
 
 ## How It Works
 
@@ -35,13 +45,14 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Environment Variables
 
-Create a `.env.local` file with:
+Set environment variables in your Netlify site dashboard, or create a `.env.local` file for local development:
 
 ```bash
-WPT_API_KEY=your_webpagetest_api_key
-CLAUDE_API_KEY=your_claude_api_key
-CLAUDE_MODEL=claude-3-5-sonnet-20240620
-CACHE_TTL_SECONDS=604800  # Optional: Cache TTL in seconds (default: 7 days)
+DATABASE_URL=postgresql://user:pass@host:port/db  # Required: Neon database connection
+WPT_API_KEY=your_webpagetest_api_key              # Required for performance testing
+CLAUDE_API_KEY=your_claude_api_key                # Required for AI insights
+CLAUDE_MODEL=claude-3-5-sonnet-20240620           # AI model to use
+CACHE_TTL_SECONDS=604800                          # Optional: Cache TTL (default: 7 days)
 ```
 
 ## Tech Stack
@@ -94,20 +105,16 @@ The caching system is used for:
 
 ## Testing
 
-Run the test suite:
+Run the test suite using Netlify CLI:
 
 ```bash
-npm test
-# or
-yarn test
+ntl dev:exec -- npm run test
 ```
 
 For watch mode during development:
 
 ```bash
-npm run test:watch
-# or
-yarn test:watch
+ntl dev:exec -- npm run test:watch
 ```
 
 ## Dependencies
@@ -125,17 +132,18 @@ yarn test:watch
 - Jest testing framework with React Testing Library
 - Tailwind CSS for styling
 
-## Deploy on Vercel
+## Deploy on Netlify
 
-The easiest way to deploy Lightning Load is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme).
+This application is designed to deploy on [Netlify](https://netlify.com) for proper environment variable injection and seamless deployment.
 
-Make sure to set your environment variables in the Vercel dashboard:
-- `WPT_API_KEY`
-- `CLAUDE_API_KEY`
-- `CLAUDE_MODEL`
-- `CACHE_TTL_SECONDS` (optional)
+Set your environment variables in the Netlify site dashboard:
+- `DATABASE_URL` - Your Neon database connection string
+- `WPT_API_KEY` - WebPageTest API key
+- `CLAUDE_API_KEY` - Claude AI API key
+- `CLAUDE_MODEL` - AI model (default: claude-3-5-sonnet-20240620)
+- `CACHE_TTL_SECONDS` - Cache TTL in seconds (optional, default: 604800)
 
-Check out the [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+The build command will automatically run via `ntl build` which ensures proper environment variable injection during the build process.
 
 ## Under the Hood
 
