@@ -288,7 +288,7 @@ class StaticA11yAnalyzer {
 
   private checkARIA() {
     // aria-hidden on focusable elements
-    const hiddenFocusable = this.$('[aria-hidden="true"]').filter(':focusable, a[href], button, input, textarea, select').toArray();
+    const hiddenFocusable = this.$('[aria-hidden="true"]').filter('a[href], button, input, textarea, select, [tabindex]:not([tabindex="-1"])').toArray();
     if (hiddenFocusable.length > 0) {
       this.addViolation(
         'aria-hidden-focus',
