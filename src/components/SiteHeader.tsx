@@ -5,9 +5,13 @@ export default function SiteHeader() {
     <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur">
       <div className="mx-auto max-w-8xl px-6 py-4">
         <Link href="/" className="inline-flex items-center space-x-2 text-xl font-bold text-slate-100 hover:text-yellow-400 transition-colors">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500">
-            <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+          <div className="flex h-8 w-8 items-center justify-center">
+            <svg viewBox="0 0 1440 1440" version="1.1" xmlns="http://www.w3.org/2000/svg">
+              <g id="ample-logo-a-white" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" className="fill-current">
+                <g id="logo-ample-a-white" transform="translate(5.000000, 4.924761)">
+                  <path d="M1066.64667,0 L1135,290.119214 C1028.91799,227.780741 890.481332,204.331662 749.799358,236.29456 C557.291058,280.090223 414.915895,414.47148 373.984876,569.956908 C368.721265,591.241456 367.543394,613.536119 372.917431,636.227612 C391.4689,714.583609 471.34328,763.429843 551.328086,745.247789 C691.678783,713.320966 621.632264,526.19732 808.361634,483.700375 C934.945964,454.912122 1001.75334,527.207435 1010.95546,566.16898 L1010.95546,566.16898 L1024.46416,623.096128 L670.513913,789.368132 C619.055672,813.610871 573.265934,844.92441 536.089379,883.092294 C444.951607,976.347476 401.664846,1103.98261 431.553324,1230.21081 C436.816935,1252.50547 444.325863,1273.71787 453.564789,1293.95622 C242.357786,1238.86893 68.3641471,1074.2564 15.764843,850.985095 C-59.9869889,529.444116 144.557681,208.624647 472.631577,134.417333 L472.631577,134.417333 L1066.64667,0 Z M1084.22705,893.012042 L1111.08543,1009.04205 C1139.18962,1129.54875 1052.89839,1252.23921 918.350028,1283.24848 C835.06342,1302.4291 734.62849,1306.72381 709.822052,1200.52069 C695.824918,1140.68589 735.764383,1074.48181 808.278329,1037.17605 C880.755633,999.906691 1084.22705,893.012042 1084.22705,893.012042 L1084.22705,893.012042 Z"></path>
+                </g>
+              </g>
             </svg>
           </div>
           <span>Webpage Audit</span>
