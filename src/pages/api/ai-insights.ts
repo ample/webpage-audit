@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import crypto from 'crypto';
-import { withCache } from '@lib/server/cache';
+import { aiInsightsService } from '@/lib/db/services';
 
 type Metrics = {
   ttfbMs: number;
@@ -48,14 +48,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       fullyLoadedMs: metrics.fullyLoadedMs ?? null,
     };
 
-    const signature = testId
-      ? `ai:test:${testId}`
-      : `ai:sig:${sha1(JSON.stringify(summary))}`;
+    const cacheKey = testId || `ai:sig:${sha1(JSON.stringify(summary))}`;
 
-    const suggestions = await withCache<string[]>(
-      signature,
-      CACHE_TTL_SECONDS,
-      async () => {
+    // Check for cached AI insights
+    const cached = await aiInsightsService.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({ suggestions: cached });
+    }
+
+    // Generate new AI insights
+    const suggestions = await (async () => {
         const prompt = [
           'You are a friendly web performance consultant. Given these WebPageTest results, provide 3-5 recommendations.',
           'Write in a casual, supportive but profressional tone. Assume the user is moderately technical. Try not to repeat yourself across recommendations.',
@@ -99,8 +101,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
         const dedup = Array.from(new Set(suggestions.map((s) => s.replace(/^-+\s*/, '').trim()))).slice(0, 6);
         return dedup;
-      }
-    );
+      })();
+
+    // Cache the AI insights
+    await aiInsightsService.set(cacheKey, suggestions, CACHE_TTL_SECONDS);
 
     return res.status(200).json({ suggestions });
   } catch (e: unknown) {

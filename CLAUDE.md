@@ -120,10 +120,20 @@ Focus on:
 ### Environment Variables Required
 
 ```bash
-WPT_API_KEY=your_webpagetest_api_key      # Required for performance testing
-CLAUDE_API_KEY=your_claude_api_key        # Required for AI insights
-CLAUDE_MODEL=claude-3-5-sonnet-20240620   # AI model to use
-CACHE_TTL_SECONDS=604800                  # Optional: Cache TTL (default: 7 days)
+DATABASE_URL=postgresql://user:pass@host:port/db  # Required: Neon database connection
+WPT_API_KEY=your_webpagetest_api_key              # Required for performance testing
+CLAUDE_API_KEY=your_claude_api_key                # Required for AI insights
+CLAUDE_MODEL=claude-3-5-sonnet-20240620           # AI model to use
+CACHE_TTL_SECONDS=604800                          # Optional: Cache TTL (default: 7 days)
+```
+
+### Database Commands
+
+```bash
+npm run db:generate  # Generate new migration files
+npm run db:push      # Push schema directly to database (development)
+npm run db:migrate   # Apply migrations to database (production)
+npm run db:studio    # Launch Drizzle Studio for database management
 ```
 
 ## Problem-Solving Together
@@ -183,10 +193,17 @@ Would you like me to [specific improvement]?"
 - **Accessibility**: Uses axe-core for comprehensive a11y auditing
 - **Error Handling**: Graceful degradation if MCP server fails
 
-### Server-Side Caching (`src/lib/server/cache.ts`)
-- **TTL-based**: Configurable cache expiration (default 7 days)
-- **Request Coalescing**: Prevents duplicate simultaneous requests
-- **Memory-based**: Simple in-process cache with automatic cleanup
+### Database Layer (`src/lib/db/`)
+- **Drizzle ORM**: Type-safe database operations with Neon PostgreSQL
+- **Schema**: Test results, AI insights, A11y reports, and user sessions
+- **Services**: High-level database operations (`testResultsService`, `aiInsightsService`, etc.)
+- **Connection**: Serverless-optimized connection management
+- **TTL Management**: Automatic cleanup of expired cached data
+
+### Session Management (`src/lib/session.ts`)
+- **Client Sessions**: Browser-based session IDs for user data persistence
+- **Database Storage**: User preferences and recent tests stored in database
+- **Fallback Support**: localStorage fallback for backward compatibility
 
 ## Working Together
 

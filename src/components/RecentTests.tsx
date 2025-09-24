@@ -1,18 +1,38 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { getSessionId } from '@/lib/session';
 
 type Recent = { testId: string; url?: string; title?: string; runAt?: string };
 
 export default function RecentTests() {
   const [items, setItems] = useState<Recent[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const arr: Recent[] = JSON.parse(localStorage.getItem('ll:recent-tests') || '[]');
-      setItems(arr);
-    } catch {}
+    async function loadRecentTests() {
+      try {
+        const sessionId = getSessionId();
+        const response = await fetch(`/api/session/recent-tests?sessionId=${encodeURIComponent(sessionId)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setItems(data.recentTests || []);
+        }
+      } catch (error) {
+        console.error('Failed to load recent tests:', error);
+        // Fallback to localStorage for backward compatibility
+        try {
+          const arr: Recent[] = JSON.parse(localStorage.getItem('ll:recent-tests') || '[]');
+          setItems(arr);
+        } catch {}
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRecentTests();
   }, []);
 
+  if (loading) return null;
   if (!items.length) return null;
 
   return (

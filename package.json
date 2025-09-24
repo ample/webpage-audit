@@ -8,13 +8,20 @@
     "start": "next start",
     "lint": "next lint",
     "test": "jest --passWithNoTests --verbose",
-    "test:watch": "jest --watch --verbose"
+    "test:watch": "jest --watch --verbose",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.3",
+    "@neondatabase/serverless": "^1.0.1",
     "@upstash/redis": "^1.35.3",
     "a11y-mcp-server": "^1.0.14",
     "axios": "^1.11.0",
+    "drizzle-kit": "^0.31.4",
+    "drizzle-orm": "^0.44.5",
     "next": "14",
     "pdfkit": "^0.17.1",
     "react": "19.1.0",

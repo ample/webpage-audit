@@ -4,6 +4,7 @@ import Head from 'next/head';
 import AuditForm from '@components/AuditForm';
 import SiteHeader from '@components/SiteHeader';
 import RecentTests from '@components/RecentTests';
+import { getSessionId } from '@/lib/session';
 
 export default function Home() {
   const router = useRouter();
@@ -36,10 +37,18 @@ export default function Home() {
             <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-md">
               <AuditForm
                 disabled={busy}
-                onStart={(id, useAiInsights) => {
+                onStart={async (id, useAiInsights) => {
                   setBusy(true);
                   try {
-                    localStorage.setItem(`ll:ai:sel:${id}`, useAiInsights ? 'true' : 'false');
+                    const sessionId = getSessionId();
+                    await fetch(`/api/session/ai-preference?sessionId=${encodeURIComponent(sessionId)}&testId=${encodeURIComponent(id)}`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ useAi: useAiInsights }),
+                    }).catch(() => {
+                      // Fallback to localStorage
+                      localStorage.setItem(`ll:ai:sel:${id}`, useAiInsights ? 'true' : 'false');
+                    });
                   } catch {}
                   router.push(`/results?testId=${encodeURIComponent(id)}`);
                 }}

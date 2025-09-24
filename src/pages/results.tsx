@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { getSessionId } from '@/lib/session';
 
 import useAudit from '@lib/hooks/useAudit';
 import LoadingSpinner from '@components/LoadingSpinner';
@@ -34,11 +35,25 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
 
   const [useAiInsights, setUseAiInsights] = useState(true);
   useEffect(() => {
-    try {
-      const v = localStorage.getItem(`ll:ai:sel:${testId}`);
-      if (v === 'true') setUseAiInsights(true);
-      else if (v === 'false') setUseAiInsights(false);
-    } catch {}
+    async function loadAiPreference() {
+      try {
+        const sessionId = getSessionId();
+        const response = await fetch(`/api/session/ai-preference?sessionId=${encodeURIComponent(sessionId)}&testId=${encodeURIComponent(testId)}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.useAi !== null) {
+            setUseAiInsights(data.useAi);
+            return;
+          }
+        }
+        // Fallback to localStorage
+        const v = localStorage.getItem(`ll:ai:sel:${testId}`);
+        if (v === 'true') setUseAiInsights(true);
+        else if (v === 'false') setUseAiInsights(false);
+      } catch {}
+    }
+
+    loadAiPreference();
   }, [testId]);
 
   const { data, loading, error, statusText, phase, testStartTime, ai, a11y, isHistorical } =
@@ -67,7 +82,15 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
     try {
       const { testId: newId } = await runTest(data.siteUrl);
       try {
-        localStorage.setItem(`ll:ai:sel:${newId}`, useAiInsights ? 'true' : 'false');
+        const sessionId = getSessionId();
+        await fetch(`/api/session/ai-preference?sessionId=${encodeURIComponent(sessionId)}&testId=${encodeURIComponent(newId)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ useAi: useAiInsights }),
+        }).catch(() => {
+          // Fallback to localStorage
+          localStorage.setItem(`ll:ai:sel:${newId}`, useAiInsights ? 'true' : 'false');
+        });
       } catch {}
       router.push(`/results?testId=${encodeURIComponent(newId)}`);
     } catch {}

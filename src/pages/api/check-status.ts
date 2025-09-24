@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { testResultsService } from '@/lib/db/services';
 
 const WPT_BASE = 'https://www.webpagetest.org';
 
@@ -75,6 +76,23 @@ export default async function handler(
   }
 
   try {
+    // First, check if we have this test cached in our database
+    const existingTest = await testResultsService.findById(testId);
+    if (existingTest && existingTest.phase === 'finished' && existingTest.metrics) {
+      // Return cached finished test
+      const payload: FinishedPayload = {
+        statusCode: 200,
+        statusText: 'Completed',
+        phase: 'finished',
+        metrics: existingTest.metrics as Metrics,
+        siteUrl: existingTest.url,
+        siteTitle: existingTest.title || undefined,
+        runAt: existingTest.runAt.toISOString(),
+        summaryUrl: existingTest.summaryUrl || undefined,
+        jsonUrl: existingTest.jsonUrl || undefined,
+      };
+      return res.status(200).json(payload);
+    }
     const r = await fetch(
       `${WPT_BASE}/jsonResult.php?test=${encodeURIComponent(testId)}&f=json`,
       {
@@ -113,6 +131,25 @@ export default async function handler(
     const jsonUrl = `${WPT_BASE}/jsonResult.php?test=${encodeURIComponent(testId)}&f=json`;
 
     if (phase !== 'finished') {
+      // Update or create test result in database for non-finished states
+      if (existingTest) {
+        await testResultsService.update(testId, {
+          phase,
+          statusText,
+          ...(siteUrl && !existingTest.title && { title: undefined }), // Will fetch title when finished
+        });
+      } else if (siteUrl) {
+        // Create new test entry
+        await testResultsService.create({
+          testId,
+          url: siteUrl,
+          phase,
+          statusText,
+          summaryUrl,
+          jsonUrl,
+        });
+      }
+
       const payload: NonFinishedPayload = {
         statusCode,
         statusText,
@@ -168,6 +205,29 @@ export default async function handler(
     }
 
     const runAt = wptCompleted || new Date().toISOString();
+
+    // Update or create finished test result in database
+    if (existingTest) {
+      await testResultsService.update(testId, {
+        phase: 'finished',
+        statusText,
+        metrics,
+        title: siteTitle,
+        summaryUrl,
+        jsonUrl,
+      });
+    } else if (siteUrl) {
+      await testResultsService.create({
+        testId,
+        url: siteUrl,
+        title: siteTitle,
+        phase: 'finished',
+        statusText,
+        summaryUrl,
+        jsonUrl,
+        metrics,
+      });
+    }
 
     const payload: FinishedPayload = {
       statusCode,

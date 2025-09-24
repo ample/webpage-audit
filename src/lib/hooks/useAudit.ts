@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Metrics } from '@/pages/api/check-status';
 import { getAiInsights } from '@lib/api';
+import { getSessionId } from '@/lib/session';
 
 type Phase = 'queued' | 'running' | 'finished' | 'error';
 type StatusPayload = {
@@ -178,10 +179,21 @@ export default function useAudit(testId: string | null, options?: Options) {
 
   const saveRecent = useCallback((testId: string, url?: string, title?: string, runAt?: string) => {
     try {
-      const key = 'll:recent-tests';
-      const arr: RecentTest[] = JSON.parse(localStorage.getItem(key) || '[]');
-      const next = [{ testId, url, title, runAt }, ...arr.filter((r) => r.testId !== testId)].slice(0, 6);
-      localStorage.setItem(key, JSON.stringify(next));
+      const sessionId = getSessionId();
+      fetch(`/api/session/recent-tests?sessionId=${encodeURIComponent(sessionId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ testId, url, title, runAt }),
+      }).catch((error) => {
+        console.error('Failed to save recent test:', error);
+        // Fallback to localStorage
+        try {
+          const key = 'll:recent-tests';
+          const arr: RecentTest[] = JSON.parse(localStorage.getItem(key) || '[]');
+          const next = [{ testId, url, title, runAt }, ...arr.filter((r) => r.testId !== testId)].slice(0, 6);
+          localStorage.setItem(key, JSON.stringify(next));
+        } catch {}
+      });
     } catch {}
   }, []);
 

@@ -1,8 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
-import { withCache } from '@lib/server/cache';
+import { a11yReportsService } from '@/lib/db/services';
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -39,10 +38,6 @@ type A11yReport = {
 export const config = { runtime: 'nodejs' };
 
 const CACHE_TTL_SECONDS = Number(process.env.CACHE_TTL_SECONDS ?? 60 * 60 * 24 * 7);
-
-function sha1(input: string) {
-  return crypto.createHash('sha1').update(input).digest('hex');
-}
 
 /** --------- safe parsers for unknown --------- */
 function get(o: unknown, key: string): unknown {
@@ -150,10 +145,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Invalid url' });
   }
 
-  const key = `a11y:${sha1(JSON.stringify({ url, tags: tags || [] }))}`;
-
   try {
-    const report = await withCache<A11yReport>(key, CACHE_TTL_SECONDS, async () => {
+    // Check for cached report
+    const cached = await a11yReportsService.get(url);
+    if (cached) {
+      return res.status(200).json({ cached: true, report: cached });
+    }
+
+    // Generate new report
+    const report = await (async (): Promise<A11yReport> => {
       const { command, args } = resolveA11yMcpCommand();
 
       const client = new Client({ name: 'll-audit-a11y', version: '1.0.0' });
@@ -185,7 +185,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       else raw = result;
 
       return normalizeResult(url, raw);
-    });
+    })();
+
+    // Cache the report
+    await a11yReportsService.set(url, report, CACHE_TTL_SECONDS);
 
     return res.status(200).json({ cached: false, report });
   } catch (e: unknown) {
