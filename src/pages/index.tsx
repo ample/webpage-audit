@@ -28,10 +28,10 @@ export default function Home() {
           <section className="mx-auto max-w-3xl px-6 pt-10 pb-32 space-y-8">
             <header className="text-center space-y-4">
               <h1 className="text-3xl font-bold text-slate-100">
-                Insights To Make Your Website <span className="text-orange-200">Lightning Fast</span>
+                Is your website <span className="text-orange-200 italic">fast</span> enough?
               </h1>
               <p className="text-slate-300 text-lg">
-                Run a WebPageTest-powered site audit and get actionable AI recommendations to make it load at lightning speed.
+              Most aren’t. Studies show a one-second delay can slash conversions and search rankings. Our AI-powered audits reveal exactly where you’re losing time — and customers — and how to win them back.
               </p>
             </header>
 
