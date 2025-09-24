@@ -96,20 +96,22 @@ export const aiInsightsService = {
       expiresAt: getExpiresAt(ttlSeconds),
     };
 
-    // Use upsert (insert or update if exists)
-    const [result] = await db
-      .insert(aiInsights)
-      .values(data)
-      .onConflictDoUpdate({
-        target: aiInsights.id,
-        set: {
-          suggestions: sql`excluded.suggestions`,
-          expiresAt: sql`excluded.expires_at`,
-        },
-      })
-      .returning();
-
-    return result;
+    try {
+      // Try to insert new record
+      const [result] = await db.insert(aiInsights).values(data).returning();
+      return result;
+    } catch {
+      // If insert fails due to conflict, update existing record
+      const [result] = await db
+        .update(aiInsights)
+        .set({
+          suggestions,
+          expiresAt: getExpiresAt(ttlSeconds),
+        })
+        .where(eq(aiInsights.id, testId))
+        .returning();
+      return result;
+    }
   },
 
   async get(testId: string): Promise<string[] | null> {
@@ -144,19 +146,22 @@ export const a11yReportsService = {
       expiresAt: getExpiresAt(ttlSeconds),
     };
 
-    const [result] = await db
-      .insert(a11yReports)
-      .values(data)
-      .onConflictDoUpdate({
-        target: a11yReports.id,
-        set: {
-          report: sql`excluded.report`,
-          expiresAt: sql`excluded.expires_at`,
-        },
-      })
-      .returning();
-
-    return result;
+    try {
+      // Try to insert new record
+      const [result] = await db.insert(a11yReports).values(data).returning();
+      return result;
+    } catch {
+      // If insert fails due to conflict, update existing record
+      const [result] = await db
+        .update(a11yReports)
+        .set({
+          report,
+          expiresAt: getExpiresAt(ttlSeconds),
+        })
+        .where(eq(a11yReports.id, id))
+        .returning();
+      return result;
+    }
   },
 
   async get(url: string) {
