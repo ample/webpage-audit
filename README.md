@@ -1,4 +1,4 @@
-# Lightning Load ⚡
+# Webpage Audit ⚡
 
 Make your website lightning fast with comprehensive performance analysis, AI-powered optimization recommendations, and accessibility auditing.
 
@@ -39,7 +39,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 1. **Enter a URL** - Input any website URL you want to optimize
 2. **Choose Analysis Type** - Toggle between rule-based or AI-powered recommendations
-3. **Run the Test** - Lightning Load analyzes your site's performance bottlenecks
+3. **Run the Test** - Webpage Audit analyzes your site's performance bottlenecks
 4. **Get Performance Insights** - Receive actionable recommendations to make your site lightning fast
 5. **Review Accessibility** - Get detailed accessibility audit results with violation details
 
@@ -74,7 +74,7 @@ CACHE_TTL_SECONDS=604800                          # Optional: Cache TTL (default
 
 ## Accessibility Features
 
-Lightning Load includes comprehensive accessibility auditing powered by the Model Context Protocol (MCP):
+Webpage Audit includes comprehensive accessibility auditing powered by the Model Context Protocol (MCP):
 
 - **Axe-core Integration**: Uses the industry-standard axe-core accessibility testing engine
 - **MCP Server**: Leverages the `a11y-mcp-server` for reliable accessibility scanning
@@ -90,7 +90,7 @@ The accessibility panel displays:
 
 ## Caching System
 
-Lightning Load implements an efficient server-side caching system:
+Webpage Audit implements an efficient server-side caching system:
 
 - **In-Memory Cache**: Fast, per-process TTL-based caching
 - **Request Coalescing**: Prevents duplicate requests for the same resource
@@ -147,7 +147,7 @@ The build command will automatically run via `ntl build` which ensures proper en
 
 ## Under the Hood
 
-When you run an audit test, Lightning Load orchestrates multiple services to provide comprehensive analysis:
+When you run an audit test, Webpage Audit orchestrates multiple services to provide comprehensive analysis:
 
 ### 1. Performance Testing Flow
 1. **Test Initiation**: User submits a URL via `/api/run-test`
@@ -157,7 +157,7 @@ When you run an audit test, Lightning Load orchestrates multiple services to pro
 5. **Results Processing**: Raw WebPageTest data is normalized and cached
 
 ### 2. Parallel Analysis Services
-Once performance data is available, Lightning Load triggers parallel analysis:
+Once performance data is available, Webpage Audit triggers parallel analysis:
 
 **AI-Powered Insights** (Optional - when `?ai=true`):
 - Sends performance metrics to Claude AI via `/api/ai-insights`
@@ -198,7 +198,7 @@ The beauty of this architecture is that each service operates independently - if
 
 ## Architecture
 
-Lightning Load follows a modern Next.js architecture:
+Webpage Audit follows a modern Next.js architecture:
 
 - **Pages Router**: Traditional Next.js routing with API routes
 - **Server-Side Rendering**: Dynamic pages with `getServerSideProps`

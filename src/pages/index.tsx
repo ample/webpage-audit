@@ -13,7 +13,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Lightning Load - Insights To Make Your Website Lightning Fast</title>
+        <title>Webpage Audit - Insights To Make Your Website Lightning Fast</title>
         <meta
           name="description"
           content="Optimize your website's performance with WebPageTest audits and AI-powered recommendations to make your site load at lightning speed"
@@ -47,7 +47,7 @@ export default function Home() {
                       body: JSON.stringify({ useAi: useAiInsights }),
                     }).catch(() => {
                       // Fallback to localStorage
-                      localStorage.setItem(`ll:ai:sel:${id}`, useAiInsights ? 'true' : 'false');
+                      localStorage.setItem(`wa:ai:sel:${id}`, useAiInsights ? 'true' : 'false');
                     });
                   } catch {}
                   router.push(`/results?testId=${encodeURIComponent(id)}`);

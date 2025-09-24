@@ -37,7 +37,7 @@ function clamp(n: number, lo: number, hi: number) {
 }
 
 function aiLocalKey(id: string) {
-  return `ll:ai:${id}`;
+  return `wa:ai:${id}`;
 }
 
 type NodeRef = { html?: string; target?: string[]; failureSummary?: string };
@@ -188,7 +188,7 @@ export default function useAudit(testId: string | null, options?: Options) {
         console.error('Failed to save recent test:', error);
         // Fallback to localStorage
         try {
-          const key = 'll:recent-tests';
+          const key = 'wa:recent-tests';
           const arr: RecentTest[] = JSON.parse(localStorage.getItem(key) || '[]');
           const next = [{ testId, url, title, runAt }, ...arr.filter((r) => r.testId !== testId)].slice(0, 6);
           localStorage.setItem(key, JSON.stringify(next));

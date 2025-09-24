@@ -62,7 +62,7 @@ function filenameBase(data: ExportBody['data']) {
     String(date.getMonth() + 1).padStart(2, '0'),
     String(date.getDate()).padStart(2, '0'),
   ].join('-');
-  return `lightning-load-${host}-${stamp}`;
+  return `webpage-audit-${host}-${stamp}`;
 }
 
 function drawSectionHeader(doc: PDFDoc, title: string) {
@@ -160,7 +160,7 @@ function writePdf(res: NextApiResponse, data: ExportBody['data']) {
   });
 
   // Header
-  const title = 'Lightning Load Results';
+  const title = 'Webpage Audit Results';
   const sub = data.siteTitle || (data.siteUrl ? new URL(data.siteUrl).host : 'Website');
   const run = data.runAt ? new Date(data.runAt) : null;
 

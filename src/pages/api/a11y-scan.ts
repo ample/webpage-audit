@@ -156,7 +156,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const report = await (async (): Promise<A11yReport> => {
       const { command, args } = resolveA11yMcpCommand();
 
-      const client = new Client({ name: 'll-audit-a11y', version: '1.0.0' });
+      const client = new Client({ name: 'wa-audit-a11y', version: '1.0.0' });
       const transport = new StdioClientTransport({
         command,
         args,

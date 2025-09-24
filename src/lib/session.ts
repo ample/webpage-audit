@@ -1,7 +1,7 @@
 // Client-side session management
 // Generates a persistent session ID for tracking user data without requiring authentication
 
-const SESSION_KEY = 'll:session-id';
+const SESSION_KEY = 'wa:session-id';
 
 function generateSessionId(): string {
   return 'sess_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2);

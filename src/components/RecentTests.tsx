@@ -21,7 +21,7 @@ export default function RecentTests() {
         console.error('Failed to load recent tests:', error);
         // Fallback to localStorage for backward compatibility
         try {
-          const arr: Recent[] = JSON.parse(localStorage.getItem('ll:recent-tests') || '[]');
+          const arr: Recent[] = JSON.parse(localStorage.getItem('wa:recent-tests') || '[]');
           setItems(arr);
         } catch {}
       } finally {

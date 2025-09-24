@@ -1,4 +1,4 @@
-// Database schema for Lightning Load
+// Database schema for Webpage Audit
 import { pgTable, text, timestamp, jsonb, index } from 'drizzle-orm/pg-core';
 
 // Test results table - stores WebPageTest results and metadata

@@ -47,7 +47,7 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
           }
         }
         // Fallback to localStorage
-        const v = localStorage.getItem(`ll:ai:sel:${testId}`);
+        const v = localStorage.getItem(`wa:ai:sel:${testId}`);
         if (v === 'true') setUseAiInsights(true);
         else if (v === 'false') setUseAiInsights(false);
       } catch {}
@@ -89,7 +89,7 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
           body: JSON.stringify({ useAi: useAiInsights }),
         }).catch(() => {
           // Fallback to localStorage
-          localStorage.setItem(`ll:ai:sel:${newId}`, useAiInsights ? 'true' : 'false');
+          localStorage.setItem(`wa:ai:sel:${newId}`, useAiInsights ? 'true' : 'false');
         });
       } catch {}
       router.push(`/results?testId=${encodeURIComponent(newId)}`);
@@ -125,7 +125,7 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
         String(d.getMonth() + 1).padStart(2, '0'),
         String(d.getDate()).padStart(2, '0'),
       ].join('-');
-      return `lightning-load-${host}-${stamp}`;
+      return `webpage-audit-${host}-${stamp}`;
     })();
 
     const r = await fetch('/api/export', {
@@ -150,7 +150,7 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
   return (
     <>
       <Head>
-        <title>{title ? `${title} - Lightning Load Results` : 'Lightning Load Results'}</title>
+        <title>{title ? `${title} - Webpage Audit Results` : 'Webpage Audit Results'}</title>
         <meta name="description" content="WebPageTest performance results with actionable insights to make your website load faster" />
       </Head>
 

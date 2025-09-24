@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-# Lightning Load - Web Performance Audit Tool
+# Webpage Audit - Web Performance Audit Tool
 
-Lightning Load is a Next.js application that provides comprehensive web performance analysis using WebPageTest API, AI-powered optimization recommendations via Claude AI, and accessibility auditing through MCP (Model Context Protocol) servers.
+Webpage Audit is a Next.js application that provides comprehensive web performance analysis using WebPageTest API, AI-powered optimization recommendations via Claude AI, and accessibility auditing through MCP (Model Context Protocol) servers.
 
 ## Key Architecture
 
