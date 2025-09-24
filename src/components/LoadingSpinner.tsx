@@ -14,8 +14,8 @@ export default function LoadingSpinner({ label }: Props) {
       >
         <defs>
           <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#EAB308" />
-            <stop offset="100%" stopColor="#F97316" />
+            <stop offset="0%" stopColor="#0495DF" />
+            <stop offset="100%" stopColor="#00A3FF" />
           </linearGradient>
         </defs>
         <circle

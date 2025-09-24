@@ -9,7 +9,7 @@ export default function SiteFooter() {
               href="https://ample.co"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-slate-200 hover:text-orange-400 transition-colors underline decoration-slate-600 hover:decoration-orange-400 underline-offset-2"
+              className="text-slate-200 hover:text-ample-blue transition-colors underline decoration-slate-600 hover:decoration-ample-blue underline-offset-2"
             >
               Ample
             </a>.
