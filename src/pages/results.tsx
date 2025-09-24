@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 import { getSessionId } from '@/lib/session';
 
 import useAudit from '@lib/hooks/useAudit';
-import LoadingSpinner from '@components/LoadingSpinner';
+import LoadingWithInsights from '@components/LoadingWithInsights';
 import MetricsCards, { type MetricDetail } from '@components/MetricsCards';
 import Recommendations from '@components/Recommendations';
 import MetricModal from '@components/MetricModal';
@@ -221,14 +221,11 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
 
             {loading && (
               <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <LoadingSpinner label={loadingLabel} />
-                  {useAiInsights && (
-                    <span className="inline-flex items-center rounded-full bg-amber-900/40 px-2.5 py-1 text-xs font-medium text-amber-200 ring-1 ring-inset ring-amber-700/60">
-                      AI recommendations enabled
-                    </span>
-                  )}
-                </div>
+                <LoadingWithInsights
+                  label={loadingLabel}
+                  aiEnabled={useAiInsights}
+                  testStartTime={testStartTime}
+                />
                 {!isHistorical && <TestTimer startTime={testStartTime} />}
               </div>
             )}
