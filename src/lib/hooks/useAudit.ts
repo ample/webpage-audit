@@ -242,6 +242,13 @@ export default function useAudit(testId: string | null, options?: Options) {
       const json = await r.json();
       if (!r.ok) throw new Error(json?.error || 'a11y scan failed');
       setA11yReport(json.report as A11yReport);
+
+      // Handle production environment notice
+      if (json.notice) {
+        console.info('A11y scan notice:', json.notice);
+        // You could set this to state if you want to show it in the UI
+        // setA11yNotice(json.notice);
+      }
     } catch (e: unknown) {
       setA11yError(e instanceof Error ? e.message : 'a11y scan failed');
     } finally {
