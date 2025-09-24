@@ -77,7 +77,13 @@ export default async function handler(
 
   try {
     // First, check if we have this test cached in our database
-    const existingTest = await testResultsService.findById(testId);
+    let existingTest = null;
+    try {
+      existingTest = await testResultsService.findById(testId);
+    } catch (dbError) {
+      console.error('Database query failed:', dbError);
+      // Continue without database cache if DB is unavailable
+    }
     if (existingTest && existingTest.phase === 'finished' && existingTest.metrics) {
       // Return cached finished test
       const payload: FinishedPayload = {
@@ -132,22 +138,27 @@ export default async function handler(
 
     if (phase !== 'finished') {
       // Update or create test result in database for non-finished states
-      if (existingTest) {
-        await testResultsService.update(testId, {
-          phase,
-          statusText,
-          ...(siteUrl && !existingTest.title && { title: undefined }), // Will fetch title when finished
-        });
-      } else if (siteUrl) {
-        // Create new test entry
-        await testResultsService.create({
-          testId,
-          url: siteUrl,
-          phase,
-          statusText,
-          summaryUrl,
-          jsonUrl,
-        });
+      try {
+        if (existingTest) {
+          await testResultsService.update(testId, {
+            phase,
+            statusText,
+            ...(siteUrl && !existingTest.title && { title: undefined }), // Will fetch title when finished
+          });
+        } else if (siteUrl) {
+          // Create new test entry
+          await testResultsService.create({
+            testId,
+            url: siteUrl,
+            phase,
+            statusText,
+            summaryUrl,
+            jsonUrl,
+          });
+        }
+      } catch (dbError) {
+        console.error('Database write failed:', dbError);
+        // Continue without database caching
       }
 
       const payload: NonFinishedPayload = {
@@ -207,26 +218,31 @@ export default async function handler(
     const runAt = wptCompleted || new Date().toISOString();
 
     // Update or create finished test result in database
-    if (existingTest) {
-      await testResultsService.update(testId, {
-        phase: 'finished',
-        statusText,
-        metrics,
-        title: siteTitle,
-        summaryUrl,
-        jsonUrl,
-      });
-    } else if (siteUrl) {
-      await testResultsService.create({
-        testId,
-        url: siteUrl,
-        title: siteTitle,
-        phase: 'finished',
-        statusText,
-        summaryUrl,
-        jsonUrl,
-        metrics,
-      });
+    try {
+      if (existingTest) {
+        await testResultsService.update(testId, {
+          phase: 'finished',
+          statusText,
+          metrics,
+          title: siteTitle,
+          summaryUrl,
+          jsonUrl,
+        });
+      } else if (siteUrl) {
+        await testResultsService.create({
+          testId,
+          url: siteUrl,
+          title: siteTitle,
+          phase: 'finished',
+          statusText,
+          summaryUrl,
+          jsonUrl,
+          metrics,
+        });
+      }
+    } catch (dbError) {
+      console.error('Database write failed for finished test:', dbError);
+      // Continue without database caching
     }
 
     const payload: FinishedPayload = {

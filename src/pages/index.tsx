@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Head from 'next/head';
 import AuditForm from '@components/AuditForm';
 import SiteHeader from '@components/SiteHeader';
+import SiteFooter from '@components/SiteFooter';
 import RecentTests from '@components/RecentTests';
 import { getSessionId } from '@/lib/session';
 
@@ -58,6 +59,7 @@ export default function Home() {
             <RecentTests />
           </section>
         </main>
+        <SiteFooter />
       </div>
     </>
   );

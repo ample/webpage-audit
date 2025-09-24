@@ -11,6 +11,7 @@ import MetricsCards, { type MetricDetail } from '@components/MetricsCards';
 import Recommendations from '@components/Recommendations';
 import MetricModal from '@components/MetricModal';
 import TestTimer from '@components/TestTimer';
+import SiteFooter from '@components/SiteFooter';
 import SiteHeader from '@components/SiteHeader';
 import { runTest } from '@lib/api';
 import A11yPanel from '@components/A11yPanel';
@@ -278,6 +279,7 @@ export default function ResultsPage({ testId }: ResultsPageProps) {
             )}
           </section>
         </main>
+        <SiteFooter />
 
         <MetricModal detail={selected} onClose={() => setSelected(null)} />
       </div>
