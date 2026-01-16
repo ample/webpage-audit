@@ -20,7 +20,7 @@
   NODE_VERSION = "18"
 
 [[redirects]]
-  from = "/*"
-  to = "https://briefs-ample-co.netlify.app/:splat"
+  from = "/goodwill/*"
+  to = "https://briefs-ample-co.netlify.app/goodwill/:splat"
   status = 200
   force = false
