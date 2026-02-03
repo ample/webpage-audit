@@ -24,3 +24,9 @@
   to = "https://briefs-ample-co.netlify.app/goodwill/:splat"
   status = 200
   force = false
+
+[[redirects]]
+  from = "/amperity/*"
+  to = "https://briefs-ample-co.netlify.app/amperity/:splat"
+  status = 200
+  force = false
